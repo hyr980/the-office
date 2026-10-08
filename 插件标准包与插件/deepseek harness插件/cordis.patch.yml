@@ -1,0 +1,6 @@
+# @hyr980/dsh-office —— 办公室接入插件（Host 侧，2026-10-03）
+# 干六件事：连线 / 收 / 叫醒 / 插话 / 递话 / 报到（规范：本仓库 文档\规范\接入\）
+# bundle 层补丁：由 plugin_manager install_bundle 应用；绝不触碰 profile 层 cordis.patch.yml 的其它条目。
+- insert:
+    - id: hyr980-dsh-office
+      name: '@hyr980/dsh-office'

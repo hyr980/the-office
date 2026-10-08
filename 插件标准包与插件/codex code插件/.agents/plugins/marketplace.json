@@ -1,0 +1,13 @@
+{
+  "name": "codex-office",
+  "owner": {
+    "name": "hyr980"
+  },
+  "plugins": [
+    {
+      "name": "codex-office",
+      "source": "./",
+      "description": "把 Codex 接入办公室的本地插件包"
+    }
+  ]
+}

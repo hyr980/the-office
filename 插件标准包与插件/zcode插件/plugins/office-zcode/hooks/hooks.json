@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"],
+            "timeoutMs": 15000,
+            "statusMessage": "办公室接入：报会话、确保常驻进程在跑"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"],
+            "timeoutMs": 4000,
+            "statusMessage": "办公室接入：更新当前会话"
+          }
+        ]
+      }
+    ]
+  }
+}

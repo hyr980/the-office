@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "office": {
+      "command": "node",
+      "args": [
+        "./lib/index.mjs"
+      ],
+      "cwd": "./",
+      "env": {
+        "OFFICE_BASE_URL": "http://127.0.0.1:8787",
+        "OFFICE_MEMBER_ID": "codex",
+        "OFFICE_HOST_NAME": "Codex",
+        "OFFICE_MODEL": "codex",
+        "OFFICE_PORT": "19391"
+      },
+      "env_vars": [
+        "CODEX_HOME",
+        "CODEX_MANAGED_PACKAGE_ROOT",
+        "CODEX_CLI_PATH",
+        "CODEX_THREAD_ID"
+      ]
+    }
+  }
+}

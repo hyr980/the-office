@@ -1,0 +1,47 @@
+{
+  "name": "@hyr980/dsh-office",
+  "version": "0.2.0",
+  "description": "办公室接入插件（Host 侧）：挂连接（人点才连）、收办公室推来的叫醒、叫醒会话、插话、把工具递给 AI、报到（带门牌号）。零依赖，只用 node 内置模块。",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "office",
+    "bridge",
+    "wakeup"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "cordis.patch.yml",
+    "lib",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-slots"
+      ],
+      "platform": "web"
+    },
+    "compatibility": {
+      "dsh": ">=0.1.7-alpha.1 <0.3.0-0",
+      "profiles": [
+        "desktop"
+      ]
+    }
+  },
+  "engines": {
+    "node": ">=22.19"
+  },
+  "dependencies": {}
+}

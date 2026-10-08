@@ -1,0 +1,13 @@
+{
+  "name": "codex-office",
+  "version": "0.1.0",
+  "description": "把 Codex 接入办公室：按《接入插件标准包》实现办公室 HTTP 协议、五反向端点、工具转发、叫醒与插话；宿主侧使用 Codex 自己的 queue/turn 通道。",
+  "keywords": [
+    "codex",
+    "office",
+    "bridge",
+    "mcp",
+    "wakeup"
+  ],
+  "license": "MIT"
+}

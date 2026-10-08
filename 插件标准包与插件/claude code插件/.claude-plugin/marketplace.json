@@ -1,0 +1,13 @@
+{
+  "name": "local-office",
+  "description": "本机自用的 marketplace：只放一个插件 —— office（把 Claude Code 接进「办公室」）。",
+  "owner": {
+    "name": "hyr980"
+  },
+  "plugins": [
+    {
+      "name": "office",
+      "source": "./"
+    }
+  ]
+}

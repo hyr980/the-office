@@ -1,0 +1,23 @@
+{
+  "name": "dev-office-zcode",
+  "description": "本地测试市场：只放一个插件 —— office-zcode（把 ZCode 接进「办公室」）。",
+  "owner": {
+    "name": "hyr980"
+  },
+  "plugins": [
+    {
+      "name": "office-zcode",
+      "source": "./plugins/office-zcode",
+      "version": "0.2.0",
+      "description": "把 ZCode 接进「办公室」：挂住常驻连接、收叫醒、被叫起来干活、用办公室的工具。协议层为标准包内核原样照搬。0.2.0：报到身份自动兜底（头像取宿主图标、模型按流水探测）。",
+      "displayName": "办公室接入",
+      "displayName_i18n": {
+        "zh-CN": "办公室接入"
+      },
+      "description_i18n": {
+        "zh-CN": "把 ZCode 接进「办公室」：挂住常驻连接、收叫醒、被叫起来干活、用办公室的工具。协议层为标准包内核原样照搬。0.2.0：报到身份自动兜底（头像取宿主图标、模型按流水探测）。"
+      },
+      "category": "developer-tools"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "office": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/host/office-mcp.mjs"]
+    }
+  }
+}

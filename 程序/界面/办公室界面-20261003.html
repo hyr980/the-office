@@ -1,0 +1,2099 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>办公室 · 界面</title>
+<style>
+  :root{
+    /* ⭐ 2026-10-06 重做配色（老大：「把白天模式跟黑夜模式两个模式的配色给他改一改」）。
+       三条原则（出自两个设计 skill）：
+       ① **强调色去饱和** —— 原来那个蓝 `#1a6dff` 是 **100% 饱和**，skill 的硬线是「别超过 80%」；
+          高饱和蓝正是"AI 默认蓝"的招牌，去饱和后才跟中性灰融得进。
+       ② **亮／暗同源色阶** —— 亮色走 600 档、暗色走 500 档（同一族色阶的两种亮度），
+          不是亮暗各挑各的（原来暗色的蓝／红／绿全是另一个来源）。
+       ③ **次要文字对比度达标** —— `--sub` 原来 `#86909c` 在白底上只有 **3.0:1**（AA 要 4.5:1），
+          现在 `#6b7280` ≈ **4.6:1** ✓。
+       ⚠️ 语义色仍然是四个（绿/橙/红）—— skill 说"最多一个强调色"，那指的是**装饰**用色；
+          状态红黄绿是**信息**，砍掉就没法分辨状态了。
+       ⚠️ 浅底也一并变量化（`--xxx-w`）：状态标签那些写死的浅底从此跟着主题走。 */
+    /* ⚠️ 2026-10-06 二次微调：`--sub` 再提一档（#6b7280 只是刚够 4.6:1，而这界面上它多用在
+       11.5px 的小字上，小字要更实才不虚）⇒ 亮色 #5f6875（≈5.4:1）。 */
+    --bg:#f5f6f8; --panel:#ffffff; --line:#e7e9ee; --text:#1b1f26; --sub:#5f6875;
+    /* ⭐ 2026-10-06 换强调色（老大：「那个蓝色配色好丑啊，能不能换一个颜色？」）——
+       原来是饱和蓝（#2563eb，正是"AI 默认蓝紫"那味）。改成**青蓝（cyan）**：
+       跟界面里已有的语义色（绿=在线/成功、橙=警告、红=危险）都不撞，也不像默认味。
+       ⚠️ `--blue` 只管**文字/边框/图标**；打白字的实底另立 `--pri`（暗色下亮青打底白字会看不清）。 */
+    --blue:#0e7490; --blue-w:#e0f4f8; --pri:#0e7490;
+    --green:#16a34a; --green-w:#e8f6ec;
+    --orange:#d97706; --orange-w:#fdf3e3;
+    --red:#dc2626; --red-w:#fdeceb;
+    --gray:#cbd2dc; --bubble:#ffffff; --mine:#0e7490;
+  }
+  html[data-theme="dark"]{
+    --bg:#131417; --panel:#1b1d22; --line:#2b2e35; --text:#e7e9ec; --sub:#a3abb6;
+    --blue:#22d3ee; --blue-w:#0f3b47; --pri:#0e7490;
+    --green:#22c55e; --green-w:#14291c;
+    --orange:#f59e0b; --orange-w:#33260f;
+    --red:#ef4444; --red-w:#331717;
+    --gray:#4a5666; --bubble:#212429; --mine:#0e7490;
+  }
+  *{box-sizing:border-box}
+  /* ⭐ 2026-10-06 全局细节（"平时不显眼、缺了就显廉价"的那类）：
+     · 滚动条：系统默认那条又宽又亮，深色主题下尤其扎眼 ⇒ 收窄到 9px、跟主题灰同色；
+     · 选中文字：默认蓝是浏览器的蓝，跟主题蓝不是一回事 ⇒ 统一成主题蓝；
+     · `overscroll-behavior`：滚到底不再把整页"拖着弹"（各滚动容器单独设）。 */
+  *{scrollbar-width:thin;scrollbar-color:var(--gray) transparent}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--gray);border-radius:10px;border:2px solid transparent;background-clip:padding-box}
+  ::-webkit-scrollbar-thumb:hover{background:var(--sub);background-clip:padding-box}
+  ::-webkit-scrollbar-corner{background:transparent}
+  ::selection{background:var(--blue-w);color:var(--text)}
+  .msgs,.memlist,.board,.modal .mb,.atbox,.taskform{overscroll-behavior:contain}
+  /* ⭐ 2026-10-06 按 redesign-skill「字体优先」改：
+     · 数字一律**等宽**（`tabular-nums`）—— 这界面上全是任务号／时间／轮次，数字一跳动最显廉价；
+     · 中文先认 `Microsoft YaHei UI`（Win10+ 的精细版，没装就回落 `Microsoft YaHei`），英文回落 Segoe UI。
+     ⚠️ **不引外部字体**（本机离线，联网字体只会闪一下／加载失败）—— 只用系统自带的。 */
+  body{margin:0;font-family:"Microsoft YaHei UI","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+       background:var(--bg);color:var(--text);font-size:13.5px;height:100vh;overflow:hidden;
+       font-variant-numeric:tabular-nums}
+  .app{display:flex;flex-direction:column;height:100vh}
+
+  .top{height:50px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 16px;gap:10px;flex:none}
+  .top .title{font-weight:600;font-size:15px;margin-right:auto}
+  /* ⭐ 2026-10-06 删（老大：「这一行删掉」）：原来标题后面跟了一段 `<small>` 开发标注
+     「议事厅 ＋ 任务台 · 真数据版（接口 http://127.0.0.1:8787）」—— 对使用没意义，连样式一起清掉。 */
+  .btn{border:1px solid var(--line);background:transparent;color:var(--text);padding:5px 11px;border-radius:8px;cursor:pointer;font-size:12.5px;font-family:inherit;white-space:nowrap}
+  .btn:hover{background:var(--blue-w);border-color:var(--blue);color:var(--blue)}
+  .btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+  .btn.pri:hover{opacity:.88;color:#fff}
+
+  /* ⭐ 2026-10-06 按 redesign-skill 补齐**交互态**（原来缺的三样，一处集中写，不动别处样式）：
+     ① **过渡**：可点件原来都是"瞬间变色"（全站只有 toast 有过渡）⇒ 统一 160ms；
+        只过渡颜色／边框／透明度／transform —— **不碰 width/left/top 这类会触发重排的属性**。
+     ② **按压反馈**：按下时下沉 1px，模拟真实按键（skill 点名的 Tactile Feedback）。
+     ③ **键盘焦点环**：Tab 走键盘时要有清晰轮廓（a11y 硬要求；原先只有输入框改边框色，键盘用户根本看不出焦点在哪）。
+     ⚠️ 另外按 skill 的 mandatory 项：**系统开了"减少动态效果"就一律不动** —— 全关掉。
+     ⚠️ 别在这条规则里加 `width/height/padding` 的过渡（会抖）。 */
+  /* ⚠️ 覆盖面要**跟 `cursor:pointer` 对齐**（原来只列了 6 类，输入框／任务条目／候选行／关闭叉全漏了）。
+     ⚠️ 别在这条里加 `width/height/padding` 的过渡（会抖）；输入框也不进 `:active` 那条（打字时会跳）。 */
+  button,.btn,.mem,.mitem,.rfold,.dir,.ipt,.pickbtn,.ck,.lk,.composer input,.task .head,.atbox .it,.del,.mc .x,.modal .mh .x{transition:background-color .16s ease,border-color .16s ease,color .16s ease,opacity .16s ease,box-shadow .16s ease,transform .08s ease}
+  button:active,.btn:active,.mem:active,.mitem:active,.rfold:active,.pickbtn:active,.task .head:active{transform:translateY(1px)}
+  :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  .ipt:focus-visible,.composer input:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+  /* ⚠️ 2026-10-06 改：**去掉了 `!important`**。原先带 `!important` 时它是"一刀切"——
+     机器只要开了「减少动画效果」，**所有**过渡和动画全没（表现就是"东西突然冒出来"，老大连问两次）。
+     去掉之后：**我明确设计过动效的地方照旧生效**，没被专门指定过的元素仍然尊重系统设置。 */
+  @media (prefers-reduced-motion: reduce){*{transition:none;animation:none}}
+
+  .main{display:flex;flex:1;min-height:0}
+  .col{display:flex;flex-direction:column;min-height:0}
+  .left{width:210px;background:var(--panel);border-right:1px solid var(--line);flex:none;position:relative}
+  /* ⭐ 2026-10-06：左栏**可拖宽**（老大：「成员卡的那一条栏改成我鼠标放在那条线上面能调宽窄」）——
+     抓的就是左栏右边那条分隔线（7px 透明把手压在这条线两侧，鼠标放上去变左右箭头）；宽度存 localStorage。 */
+  .lgrip{position:absolute;top:0;bottom:0;right:-3px;width:7px;cursor:col-resize;z-index:3}
+  .lgrip:hover,.lgrip.on{background:var(--blue-w)}
+  .mid{flex:1;min-width:0;background:var(--bg)}
+  /* ⭐ 2026-10-06 加动效（老大：「这个任务看板的动效没有做」）——
+     列宽 0↔340px 走 180ms 过渡（收起时同样有，两边对称）。
+     ⚠️ 系统开了"减少动态效果"时，由上面那条全局规则一并关掉。 */
+  .right{width:340px;background:var(--panel);border-left:1px solid var(--line);flex:none;transition:width .18s ease}
+  /* ⭐ 2026-10-06 加：任务板**默认收着、点了才展开**（老大要求）——
+     收起时**不占一整条**：整列收到 0 宽，只在右边**挂一个小键**（竖排「任务」两个字，老大：
+     「任务看板的按钮不要一整条下来，改成一个挂在侧边的键，点下去才把整个任务看板拉出来，名字就任务两个字」）；
+     展开就是原来的 340px。状态记在 localStorage（跟主题一个套路），下次打开照旧。
+     ⚠️ 那个键走 `position:fixed`（挂视口右侧、**靠上＝聊天框右上角**）—— 列宽收成 0 时它照样在，
+        而且**不参与 `.main` 的 flex 布局**（不会把消息流挤窄）。 */
+  .right .rhandle{display:none}
+  .right.collapsed{width:0;min-width:0;padding:0;border-left:0;background:transparent}
+  .right.collapsed .rbody{display:none}
+  /* ⭐ 2026-10-06：任务板"拉出来"的那一下 —— 内容从右往左滑 20px ＋ 淡入（180ms，不加弹跳）。
+     ⚠️ 只动 `transform`／`opacity`（走 GPU，不触发重排）；`.collapsed` 类一切换就会重播。
+     ⚠️ 收起那一下没法做反向动画（`display:none` 一出动画就没机会播）⇒ 收起靠列宽过渡撑着。 */
+  @keyframes slideInRight{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+  /* ⚠️ 2026-10-06 改：**不再靠 `.collapsed` 类切换去"触发"动画**（同一帧里 `display` 从 none 变可见时，
+     动画不一定播得起来 —— 老大实测就是"突然冒出来"）。改成由 `toggleBoard()` **显式重播**这个类：
+     加上就播、播完由 `animationend` 摘掉。 */
+  .right .rbody.rbody-in{animation:slideInRight .18s ease-out}
+  .right.collapsed .rhandle{display:flex;flex-direction:column;align-items:center;
+    /* ⭐ 2026-10-06 改（老大：「任务看板的那个键他应该在聊天框的右上角，不是在聊天框的那个中间」）：
+       原来 `top:50% + translateY(-50%)` ＝ 挂右侧**垂直居中**，看着像飘在聊天框正中；
+       现在贴**右上角**（顶栏 50px 下面留 8px）。 */
+    position:fixed;right:0;top:58px;
+    padding:13px 7px;border-radius:10px 0 0 10px;
+    color:var(--sub);font-size:12.5px;user-select:none;cursor:pointer;
+    border:1px solid var(--line);border-right:0;background:var(--panel);
+    box-shadow:0 2px 10px #14161a26;font-family:inherit;z-index:5}
+  .right.collapsed .rhandle:hover{background:var(--bg);color:var(--text)}
+  .right.collapsed .rhandle .txt{writing-mode:vertical-rl;letter-spacing:3px}
+  .right .rfold{margin-left:auto;color:var(--sub);cursor:pointer;font-size:11.5px;padding:3px 8px;border-radius:4px}
+  .right .rfold:hover{background:var(--blue-w);color:var(--blue)}
+
+  .colhead{padding:10px 12px;font-size:12px;color:var(--sub);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;flex:none}
+  .colhead b{color:var(--text);font-size:12.5px;font-weight:600}
+
+  .memlist{overflow-y:auto;flex:1}
+  /* ⭐ 2026-10-06 加：左栏**左下角那一条**（放「设置」）—— 贴底、整行宽，跟成员列表用一条线分开。
+     老大要求：「把设置移到左下角」。 */
+  .memfoot{flex:none;border-top:1px solid var(--line);padding:8px 12px;position:relative;display:flex;flex-direction:column;gap:6px}
+  /* ⭐ 2026-10-06：「🔔 通知」常驻在「☰ 菜单」上面（老大：「待处理跟已处理改到一起，按钮叫做通知，放在左下角设置上面」）。
+     未读数字挂在它身上 ⇒ 必须常驻可见（藏进菜单就看不见未读了）。 */
+  .nbtn{width:100%;text-align:left;display:flex;align-items:center;gap:7px;border-radius:8px}
+  .nbtn .nb{margin-left:auto;min-width:18px;text-align:center;padding:1px 5px;border-radius:4px;background:var(--red);color:#fff;font-size:11.5px;font-weight:700}
+  .menuwrap{position:relative}
+  /* ⭐ 2026-10-06 加：左下角「菜单」（老大：「加一个菜单按钮在左下角…设置要方形圆角设计」）
+     —— 按钮、浮层、里面三项**统一方形圆角**（10px 圆角：不是胶囊、也不是直角）。 */
+  .menu-btn{width:100%;text-align:left;display:flex;align-items:center;gap:7px;border-radius:8px}
+  .menu-pop{position:absolute;left:0;right:0;bottom:calc(100% - 2px);display:none;
+    flex-direction:column;gap:6px;padding:8px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;box-shadow:0 -8px 26px #14161a26;z-index:70}
+  .menu-pop.on{display:flex}
+  .mitem{display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;
+    border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);
+    padding:9px 11px;font:inherit;font-size:12.5px}
+  .mitem:hover{background:var(--blue-w);border-color:var(--blue);color:var(--blue)}
+  .mitem .mico{font-size:15px;flex:none}
+  .memfoot .btn{width:100%;text-align:left;display:flex;align-items:center;gap:7px}
+  .mem{display:flex;gap:10px;padding:10px 12px;cursor:pointer;align-items:center;border-left:3px solid transparent}
+  .mem:hover{background:var(--bg)}
+  .mem.on{background:var(--blue-w);border-left-color:var(--blue)}
+  .ava{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:14px;flex:none;position:relative}
+  .dot{width:8px;height:8px;border-radius:50%;position:absolute;right:-2px;bottom:-2px;border:2px solid var(--panel)}
+  .d-on{background:var(--green)} .d-busy{background:var(--orange)} .d-off{background:var(--gray)}
+  .mem .nm{font-size:13px;line-height:1.35;min-width:0}
+  /* ⚠️ 名字行**允许换行**（2026-10-04）：左栏只有 210px，宿主进程名＋昵称并排一行装不下 ⇒
+     原来那句 nowrap+ellipsis 会把昵称整个吃掉，等于没显示。 */
+  .mem .nm b{display:block;font-weight:600;line-height:1.4}
+  .mem .nm span{color:var(--sub);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  .tag{font-size:10.5px;padding:1px 5px;border-radius:4px;background:var(--bg);color:var(--sub);border:1px solid var(--line);flex:none;white-space:nowrap}
+  /* ⭐ 2026-10-06（老大：「别两个字上下叠一起，现在只要状态是两个字就叠一起」）：
+     光有 `flex:none` 不够 —— 它只管"这一块不被压窄"，但**块里的文字照样会换行**。
+     ⇒ 补 `white-space:nowrap`（不许换行）；外面那个包裹 div 另加 `flex:none`（不许被压）。两处一起才好。 */
+  .tag.me{background:var(--blue-w);color:var(--blue);border-color:transparent}
+
+  .chathead{padding:11px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
+  .chathead b{font-size:14px}
+  .chathead span{color:var(--sub);font-size:12px;margin-left:8px}
+  .msgs{flex:1;overflow-y:auto;padding:16px}
+  /* ⚠️ 2026-10-06：`.mchat`／`.mchathead`（成员窗里那段"与它的消息"）已随功能一起撤掉 ——
+     老大：「与他的消息这种就不要了，直接显示成员卡详情就好了」。 */
+  .daysep{text-align:center;color:var(--sub);font-size:11.5px;margin:14px 0}
+  .daysep span{background:var(--line);padding:2px 9px;border-radius:10px}
+  /* ⭐ 2026-10-06 加：**系统消息**（`source: 'system'` —— 判挂／超时／代收／自动验收）不当"谁说的话"，
+     改成像微信那种**居中一条小框**：无头像、无名字、无气泡，灰字小方角（老大：「系统信息统一改成
+     像微信那样子单独的一个框，不要系统是一个头像发出来的东西」）。 */
+  .sysline{text-align:center;margin:10px 0}
+  .sysbox{display:inline-block;max-width:78%;background:var(--line);color:var(--sub);
+    font-size:11.5px;line-height:1.7;padding:4px 11px;border-radius:8px;text-align:left;
+    white-space:pre-wrap;word-break:break-word}
+  .sysline .card{margin-top:6px;text-align:left;display:inline-block;max-width:78%;background:var(--panel)}
+  .row{display:flex;gap:9px;margin-bottom:14px}
+  .row.mine{flex-direction:row-reverse}
+  .row .ava{width:30px;height:30px;font-size:12.5px;border-radius:8px}
+  .body{max-width:min(560px,72%);min-width:0}
+  .who{font-size:11.5px;color:var(--sub);margin-bottom:4px}
+  .row.mine .who{text-align:right}
+  .bub{padding:8px 11px;border-radius:10px;background:var(--bubble);border:1px solid var(--line);line-height:1.62;word-break:break-word;white-space:pre-wrap}
+  .row.mine .bub{background:var(--mine);border-color:transparent;color:#fff}
+  .meta{font-size:11px;color:var(--sub);margin-top:4px}
+  .row.mine .meta{text-align:right}
+  .at{color:var(--blue);font-weight:600}
+  .row.mine .at{color:#fff;text-decoration:underline}
+  .dir{display:inline-flex;align-items:center;gap:4px;background:var(--blue-w);color:var(--blue);border:1px solid transparent;border-radius:4px;padding:0 5px;cursor:pointer;font-weight:600}
+  .dir:hover{border-color:var(--blue)}
+  .row.mine .dir{background:#ffffff2e;color:#fff}
+  /* ⭐ 2026-10-06 修一个"白字白底"的 bug（老大截图：自己那条派发消息里，卡片上的字全看不见）：
+     气泡 `.row.mine .bub` 设了 `color:#fff`，卡片**继承了它** ⇒ 卡片是浅灰底 ＋ 白字 = 看不见
+     （只有状态标签「干着」活着，因为它自带颜色）。
+     ⇒ 卡片给自己一个**明确的文字色**，不再继承气泡的；里面 `.kv`／`.kv b` 本来就有各自的颜色。 */
+  .card{border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px 10px;margin-top:7px;font-size:12.5px;color:var(--text)}
+  .card .h{font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+  .card .kv{color:var(--sub);font-size:11.5px;line-height:1.75;word-break:break-word}
+  .card .kv b{color:var(--text);font-weight:600}
+  .st{font-size:10.5px;padding:1px 6px;border-radius:4px;font-weight:600;flex:none}
+  /* ⭐ 2026-10-06：状态标签改成走变量（原来十个写死的值，亮暗各一套）——
+     现在一套搞定、换主题自动适配，浅底就是各语义色的 `-w` 档。 */
+  .s-working{background:var(--blue-w);color:var(--blue)} .s-delivered{background:var(--orange-w);color:var(--orange)}
+  .s-done{background:var(--green-w);color:var(--green)} .s-blocked{background:var(--red-w);color:var(--red)}
+  .s-cancelled{background:var(--line);color:var(--sub)}
+  .composer{flex:none;border-top:1px solid var(--line);background:var(--panel);padding:10px 16px;display:flex;gap:8px;align-items:center}
+  .composer input{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none}
+  /* ⭐ 2026-10-06：聚焦反馈原来是"只把边框染蓝"，太弱（老大点名"输入框那边你没做"）⇒
+     补一圈**跟主题蓝同源的柔光环**（不用纯黑阴影 —— skill 里的 tinted shadow 那条）。 */
+  .composer input:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-w)}
+
+  .board{overflow-y:auto;flex:1;padding:12px}
+  .empty{color:var(--sub);font-size:12px;padding:18px 12px;text-align:center;line-height:1.8}
+  .task{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--panel);overflow:hidden}
+  .task .head{padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+  .task .head:hover{background:var(--bg)}
+  /* ⭐ 2026-10-06 重排（老大：「把任务看板里面的任务列表那种 UI 给他改成好看一点」）：
+     原来第一行是「状态 ＋ 时间 ＋ 长任务号 ＋ ▾点开」⇒ 任务号一长就把标题挤到下一行、
+     「▾ 点开」还被折成「▾ 点／开」。现在：**状态 ＋ 标题**占第一行（最重要的先给，过长出省略号），
+     时间与任务号退成第二行小字（`.l2.tn`），箭头只剩一个 ▾ 且不折行。 */
+  .task .l1{display:flex;align-items:center;gap:8px}
+  .task .l1 .tt{flex:1;min-width:0;font-size:13.5px;line-height:1.35;
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .task .l1 .caret{flex:none;white-space:nowrap}
+  .task .l2{font-size:12px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .task .l2.tn{color:var(--sub);font-size:11.5px}
+  .task .l2 .k{color:var(--sub)}
+  .task .l2 .sep{color:var(--gray)}
+  .task .l3{font-size:11.5px;color:var(--orange);padding-left:1px}
+  .task .det{display:none;border-top:1px dashed var(--line);padding:9px 10px;background:var(--bg);font-size:12px;line-height:1.8}
+  .task.open .det{display:block}
+  .det .k{color:var(--sub)}
+  .det .sub{margin:5px 0 0;padding-left:2px}
+  /* ⭐ 2026-10-06：详情区的排版重做 —— label 用网格对齐（原来每个 label 宽度靠字自己撑，看着不齐）；
+     子任务条改两行制：第一行＝状态＋名字＋备注＋轮次＋（右侧）按钮，**任务号独占第二行**小字等宽
+     （原来任务号跟别的东西挤一行 ⇒ 把名字挤成竖排、按钮折成两行）。 */
+  .det .kv2{display:grid;grid-template-columns:52px 1fr;gap:5px 10px;align-items:baseline}
+  .det .sub .it{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:6px 0;border-bottom:1px dashed var(--line)}
+  .det .sub .it:last-child{border-bottom:0}
+  .det .sub .it .sid{flex-basis:100%;font-family:Consolas,monospace;font-size:10.5px;color:var(--sub)}
+  .det .sub .it .sp{flex:1;min-width:0}
+  .det a.lk{color:var(--blue);cursor:pointer;text-decoration:underline dotted}
+  /* ⭐ 2026-10-06：链接原来 hover 毫无变化 ⇒ 下划线由虚变实。 */
+  .det a.lk:hover{text-decoration-style:solid}
+  .det .logbox{margin-top:6px;border-left:2px solid var(--line);padding-left:8px;color:var(--sub);font-size:11.5px}
+  .caret{color:var(--sub);font-size:10px}
+
+  /* 成员卡（点左栏谁就摊开谁）：中栏顶部一张，下面接跟它的消息 */
+  /* ⭐ 2026-10-06：`.mc` 原来贴在中栏顶部（下边那条线是分隔用）；现在它只住在成员窗**弹层里**，
+     下边没有"下一块内容"了 ⇒ 去掉那条线免得像"内容被截断"。 */
+  .mc{display:flex;gap:12px;padding:12px 14px;background:var(--panel);position:relative}
+  .mc .ava.big{width:46px;height:46px;border-radius:12px;font-size:18px}
+  .mc .mcinfo{flex:1;min-width:0;font-size:12.5px;line-height:1.9}
+  .mc .nm{font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px}
+  .mc .ln .k{color:var(--sub);margin-right:6px}
+  .mc .it{color:var(--sub);padding-left:12px}
+  /* ⭐ 2026-10-06 删：成员卡自己那个 ✕（`.mc .x`）—— 老大指出"跟弹层标题栏的 ✕ 功能一样"，
+     两个叉还挨得近 ⇒ 关窗统一走**标题栏右上**那一个（弹层的标准位）。下面只留弹层那个叉的 hover。 */
+  .modal .mh .x:hover{color:var(--text)}
+
+  .mask{position:fixed;inset:0;background:#00000055;display:none;align-items:center;justify-content:center;z-index:50}
+  /* ⭐⭐ 2026-10-06 修一个真实的层级 bug（老大：「通知里面选已处理，选日期的窗口在已处理窗口下面，交互就不正常」）：
+     所有 `.mask` 都是 `z-index:50` ⇒ 谁在上面**只看 DOM 顺序**；而「选日期」这块 HTML 排在**通知之前**
+     ⇒ 从通知里点「📅 今天 ▾」，日期窗被压在通知下面：看不见、点不到，连遮罩都在替通知挡着。
+     ⇒ 给"**从别的弹层里弹出来的**弹层"单独提一级（60）。
+     ⚠️ **规则**：以后再加这种"二级弹层"，要么把它的 HTML 插到调用者**后面**，要么来这一行加上它的 id。 */
+  #maskDate{z-index:60}
+  .mask.on{display:flex}
+  /* ⭐ 2026-10-06：弹层出现给一记**克制的**淡入＋上移（160ms／8px）——
+     不加缩放、不加弹跳、不拖慢操作。⚠️ 系统开了"减少动态效果"时由上面那条全局规则一并关掉。 */
+  @keyframes popIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .mask.on .modal{animation:popIn .16s ease-out}
+  .modal{background:var(--panel);border-radius:12px;width:min(560px,92vw);max-height:80vh;display:flex;flex-direction:column;border:1px solid var(--line);overflow:hidden}
+  .modal .mh{padding:13px 16px;font-weight:600;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .modal .mh .x{margin-left:auto;cursor:pointer;color:var(--sub);font-size:16px;padding:2px 6px;margin-right:-6px;line-height:1}
+  .modal .mb{padding:12px 16px;overflow-y:auto}
+  .modal .mf{padding:11px 16px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+  /* ⭐ 2026-10-06：说明文字原来用 `opacity:.7`（颜色不可控、对比度随底色漂）⇒ 改成走次要色变量；
+     设置项之间留白从 14 放到 16。 */
+  .setrow{padding:2px 0 16px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+  .setrow:last-child{border-bottom:0;margin-bottom:0;padding-bottom:2px}
+  .sethead{font-weight:600;margin-bottom:4px}
+  .setsub{font-size:13px;color:var(--sub);line-height:1.7;margin-bottom:10px}
+  /* ⭐ 2026-10-06 加：把"当前值"那一行做成**状态条**（浅底小框）——
+     原来它是一行裸灰字，跟说明文字长得一样，看不出"这是现在的状态"。 */
+  .setstate{margin-top:10px;padding:8px 11px;border-radius:8px;background:var(--bg);color:var(--sub);font-size:12.5px;line-height:1.65}
+  .seg{display:flex;gap:8px}
+  /* ⭐ 2026-10-06 改（老大：「把设置的那个 UI 改一改」）——
+     原来同一个面板里**两套选中态**：主题那组是"描边"，调试那组是"实心蓝底"（它走的是 `.btn.pri`）。
+     现在统一成**实心蓝底白字**（一眼看得出选了哪个），hover 时微亮一档给反馈。 */
+  .seg .btn.on{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:600}
+  .seg .btn.on:hover{background:var(--pri);border-color:var(--pri);color:#fff;filter:brightness(1.1)}
+  .btn.danger{border-color:var(--red);color:var(--red)}
+  .btn.danger:hover{background:var(--red);color:#fff}
+  /* 成员卡底部那排（2026-10-03 改成两个并排的键）：横着排、留 6px 缝 */
+  .memacts{display:flex;gap:6px;flex-wrap:wrap}
+  /* 点不了的那个键要看得出来（原来一条灰态样式都没有）—— 放最后，免得被 .btn.danger:hover 盖掉 */
+  .btn:disabled,.btn.danger:disabled{border-color:var(--line);color:var(--text);opacity:.35;cursor:not-allowed}
+  .btn:disabled:hover,.btn.danger:disabled:hover{background:transparent;border-color:var(--line);color:var(--text)}
+  .logline{font-family:Consolas,monospace;font-size:11.5px;padding:3px 0;border-bottom:1px dashed var(--line);display:flex;gap:8px}
+  .logline .t{color:var(--sub);flex:none}
+  .logline .ev{color:var(--blue);flex:none;min-width:96px}
+  .alertbox{border:1px solid var(--line);border-radius:10px;padding:11px;margin-bottom:10px;background:var(--bg)}
+  .alertbox .t{font-weight:600;color:var(--orange);margin-bottom:5px}
+  .alertbox.warn .t{color:var(--red)}
+  .alertbox .act{margin-top:8px;text-align:right}
+  /* ⭐ 2026-10-05 加：「系统信息」标记 —— 系统自己发的那类（判挂／超时／代收）统一挂它，
+     跟"谁说的话"分开；配色与 `.tag.me` 一致（浅蓝底＋蓝字） */
+  .sysmark{display:inline-block;font-size:10.5px;font-weight:600;padding:1px 5px;border-radius:4px;background:var(--blue-w);color:var(--blue);margin-right:5px;vertical-align:middle}
+  /* ⭐ 2026-10-06：提示条原来贴在**底部居中** ⇒ 正好压在输入区（composer）上，发完消息那一瞬挡住接着打字。
+     改挂**顶部居中**（浮在顶栏下面），哪儿都不挡；其余不变（淡出、不接鼠标事件）。 */
+  .tips{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:#14161acc;color:#fff;padding:9px 15px;border-radius:10px;font-size:12.5px;z-index:99;opacity:0;transition:opacity .2s;pointer-events:none;max-width:80vw}
+  .tips.on{opacity:1}
+
+  /* ══════════ 2026-10-04 加：按规范 04 §7.1／§7.6 补的三样 ══════════
+     ① 头像改用 AI 交上来的图标（后端存纯 base64、不带 data: 前缀 ⇒ 这里拼 MIME；
+        挂了就自动退回字母块 —— 老成员没交图标时也能看） */
+  .ava img{position:absolute;inset:0;width:100%;height:100%;border-radius:inherit;object-fit:cover}
+  /* ⭐ 昵称（nick）：宿主进程名在前、昵称在后并排（规范 04 §1／§7.6 —— 老大：「都显示」）。
+     没昵称的成员不渲染这个 span ⇒ 自然就只显示宿主进程名。 */
+  .nk{color:var(--sub);font-size:.92em;margin-left:6px;font-weight:400}
+  /* ② 输入区改成两行：上面一行是【消息／任务】开关，下面才是输入 */
+  .composer{flex-direction:column;align-items:stretch;gap:8px;position:relative}
+  .cbar{display:flex;align-items:center;gap:9px}
+  .modes{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none;position:relative}
+  /* ⭐ 2026-10-06：模式切换加**滑动指示块**（老大：「输入框两个选模式的按键，为什么没做动效」）——
+     选中那块不再"啪"地跳过去，而是 180ms 平滑滑过去（iOS 分段控件那套，克制动效，不加弹跳）。
+     ⚠️ **兜底**：`.on` 自己的蓝底**保留**（脚本万一没跑，选中态照样看得见）；
+        滑块只负责"滑动过程"好看 —— 滑到终点会被 `.on` 的底色盖住，看不出接缝。
+     ⚠️ 滑块用 `translateX + width` 过渡（不是 left/width 布局属性）⇒ 走 GPU、不触发重排。 */
+  .modes .mslid{position:absolute;top:0;bottom:0;left:0;width:0;background:var(--pri);pointer-events:none;
+                transition:transform .18s ease,width .18s ease}
+  .modes button{border:0;border-radius:0;padding:6px 13px;background:transparent;color:var(--sub);cursor:pointer;font-family:inherit;font-size:12.5px;position:relative;z-index:1}
+  .modes button.on{background:var(--pri);color:#fff;font-weight:600}
+  /* ⭐ 未选中那个原来**连 hover 都没有**（它不是 `.btn`，`.btn:hover` 管不到它）⇒ 补上。 */
+  .modes button:not(.on):hover{color:var(--blue);background:var(--blue-w)}
+  .cbar .hint{color:var(--sub);font-size:11.5px;margin-left:auto;text-align:right;line-height:1.45;min-width:0}
+  .cbar .hint.warn{color:var(--red)}
+  .sendrow{display:flex;gap:8px;align-items:center;position:relative;min-width:0}
+  .sendrow > .ipt{flex:1}
+  .taskform{display:flex;flex-direction:column;gap:8px;max-height:44vh;overflow-y:auto}
+  .tf-row{display:flex;gap:7px;align-items:center;min-width:0}
+  /* ⭐ 2026-10-06 改（老大：「派发任务的那个填表的界面 ui 优化优化」）：
+     标签列原来 62px，放不下"这是什么任务"这 6 个字 ⇒ 会折行；加宽到 76px、字号降到 11.5。 */
+  .tf-lab{color:var(--sub);font-size:11.5px;flex:none;width:76px;text-align:right;line-height:1.35}
+  /* ⚠️ 卡片就住在 composer（白底）里 ⇒ 用**底色**区分已经够，不必再套一圈边框（skill：边框与底色别叠着用）。 */
+  .subrow{border-radius:10px;padding:9px 10px;display:flex;flex-direction:column;gap:7px;background:var(--bg)}
+  /* ⭐ 2026-10-06：子任务卡改成**三段式** —— ① 谁 ② 限时／重任务 ③ 内容。
+     原来是"给谁＋限时＋分钟＋重任务＋删除"全挤一行，窄窗口下会被压出来。 */
+  .subrow .opts{display:flex;gap:7px;align-items:center}
+  .subrow .opts .k{color:var(--sub);font-size:11.5px;flex:none}
+  .subrow .top{display:flex;gap:7px;align-items:center}
+  .subrow .top .no{color:var(--sub);font-size:11.5px;flex:none}
+  .subrow .top .del{margin-left:auto;cursor:pointer;color:var(--sub);font-size:15px;padding:2px 6px;line-height:1}
+  /* ⭐ 2026-10-06：删除叉 hover 变红 —— 说清"这是删"（原来鼠标移上去毫无反应）。 */
+  .subrow .top .del:hover{color:var(--red)}
+  /* ⭐「给谁」＝点人（规范 04 §7.6：点开的是**同一张引用表**）—— 一个显示当前人选的按钮，
+     点它弹表、选完写进那件任务的 to；没选人时是灰字"给谁…"。 */
+  .pickbtn{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:8px;padding:7px 9px;font-size:12.5px;font-family:inherit;cursor:pointer;flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* ⭐ 2026-10-06：`.pickbtn` **本来就有 hover** —— 我按颜色值 grep 没查到、于是加重复了；
+     现已合并成一条（hover 时**边框和文字一起变蓝**，跟其它可点件同一个口径）。 */
+  .pickbtn:hover{border-color:var(--blue);color:var(--blue)}
+  .pickbtn.ph{color:var(--sub)}
+  /* 引用表里"不可派"的行：**显示、不隐藏**（规范 流程\02），但点不动 */
+  .atbox .it.off{opacity:.45;cursor:not-allowed}
+  .atbox .it.off:hover{background:transparent;color:inherit}
+  .ipt{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:8px;padding:7px 9px;font-size:12.5px;font-family:inherit;outline:none;min-width:0}
+  .ipt:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-w)}
+  /* ⭐ 2026-10-06 输入框专项（老大点名"输入框那边你没做"）：① 聚焦给柔光环（原来只染边框）；
+     ② 占位文字统一成次要色 + 稍淡（原来各地吃浏览器默认灰，深浅不一）。 */
+  ::placeholder{color:var(--sub);opacity:.7}
+  .ipt.grow{flex:1}
+  .ipt.num{width:68px;flex:none}
+  .ck{display:flex;align-items:center;gap:5px;color:var(--sub);font-size:12px;flex:none;cursor:pointer;user-select:none}
+  /* ③ 打 @ 弹的引用表（§7.6：点完就是一个 @谁） */
+  .atbox{position:absolute;bottom:100%;left:0;margin-bottom:7px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 26px #14161a26;max-height:232px;overflow-y:auto;display:none;z-index:60;min-width:200px}
+  .atbox.on{display:block}
+  .atbox .it{padding:7px 11px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12.5px}
+  /* ⭐ 2026-10-06 注：候选行**本来就有** hover／选中态（见下条）—— 我当时没查到、加重复了，现已合并。 */
+  .atbox .it:hover,.atbox .it.sel{background:var(--blue-w);color:var(--blue)}
+  .atbox .it .sub{color:var(--sub);font-size:11px;margin-left:auto}
+  .atbox .it .av{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600;flex:none;overflow:hidden;position:relative}
+</style>
+<script>
+/* 先把上次选的色穿上，免得亮一下再变暗。必须在样式之后、正文之前。 */
+try{
+  const t = localStorage.getItem('office.theme');
+  if(t === 'dark' || t === 'light'){ document.documentElement.dataset.theme = t; }
+}catch(e){}
+</script>
+</head>
+<body>
+<div class="app">
+
+  <div class="top">
+    <div class="title">办公室</div>
+    <!-- ⭐ 调试模式开着时的醒目标记（2026-10-04 加；规范 `04-功能清单` §7.7 第 4 条）：
+         防的是"开着忘了关"—— 平时藏起来，开着才显示（由 refreshDebugBadge() 控制）。 -->
+    <span id="debugBadge" style="display:none;padding:5px 10px;border-radius:8px;background:var(--red);color:#fff;font-weight:700;font-size:13px">⚠️ 调试模式：校验已跳过</span>
+    <!-- ⭐ 2026-10-05 改（老大：「没走插件这个说法也该改了叫非法接入，提示再加一个拒绝接入，分开来」）：
+         原来一个橙条把三类混成一个数（"今天 35 次接入没走插件"），可其中 34 次**恰恰是插件自己**
+         （连着但手续不对、在反复重试被拒）⇒ 说成"没走插件"跟事实正好相反。现在拆成**两个标记**：
+           · `accessBadge`  → 「非法接入」＝ 没带手续／手续不对就来接（后端 `unverified`）
+           · `refusedBadge` → 「拒绝接入」＝ 调用被门拒（后端 `refused`，含上面那种反复重试）
+         数据源不变（`bridge.js` 的 `accessFeed`，三个数本来就分着返回）；探活没通（`probeFail`）留在悬停明细。
+         ⚠️ 2026-10-06 改（老大截图：「橙色块飘在中间」）：**这几个标记一律不带 `margin-right:auto`** ——
+            原来 `accessBadge` 与 `debugBadge` 都带，而**标题也带** ⇒ **两个 auto 平分空白**，
+            标记被推到顶栏正中间、孤零零飘着。现在只留标题那一个 auto 独吃空白 ⇒
+            标记自然跟右侧那排按钮贴在一起（一组状态入口）。 -->
+    <span id="connBadge" style="display:none;padding:5px 10px;border-radius:8px;background:var(--red);color:#fff;font-weight:700;font-size:13px">⚠️ 连不上办公室后端</span>
+    <span id="accessBadge" style="display:none;padding:5px 10px;border-radius:8px;background:var(--orange);color:#fff;font-weight:700;font-size:13px"></span>
+    <span id="refusedBadge" style="display:none;padding:5px 10px;border-radius:8px;background:var(--sub);color:#fff;font-weight:700;font-size:13px"></span>
+    <!-- ⭐ 2026-10-06 改（老大：「待处理跟已处理改到一起，按钮叫做通知，放在左下角设置上面」）：
+         原来顶栏这两个按钮（⚠️待处理／🗂已处理）**合并成左下角的「🔔 通知」**（一个按钮 ⇒ 弹层里两个页签），
+         见 `.col.left` 里的 `.memfoot`。顶栏**不再放**入口按钮。
+         ⚠️ 未读数字（`#alertN`）跟着挪到左下角那个按钮上 —— 更新它的 `refreshAlertBadge()` 不变。 -->
+  </div>
+
+  <div class="main">
+
+    <div class="col left">
+      <div class="colhead"><b>成员</b><span class="tag" id="onNum">-- 在线</span></div>
+      <div class="memlist" id="memlist"></div>
+      <!-- ⭐ 2026-10-06：左栏右边缘那条**可拖的分隔线**（透明把手，鼠标放上去变左右箭头、微亮）——
+           拖它调左栏宽窄（老大：「成员卡的那一条栏改成我鼠标放在那条线上面能调宽窄」）。 -->
+      <div class="lgrip" id="leftGrip" title="拖动调宽窄"></div>
+      <!-- ⭐ 左下角（2026-10-06 老大）：
+           ① 「🔔 通知」＝「待处理 ＋ 已处理」合并来的（老大：「待处理跟已处理改到一起，按钮叫做通知，放在左下角设置上面」）
+              —— 常驻、**在菜单上面**；未读数字挂它身上（`#alertN`）。
+           ② 「☰ 菜单」＝设置／日志／我的文件夹三类（老大：「加一个菜单按钮在左下角，把设置／日志／我的文件夹三类放进去」）
+              —— 按钮、弹出的面板、里面三项**全走方形圆角**（老大特别点了「设置要方形圆角设计」）。 -->
+      <div class="memfoot">
+        <button class="btn nbtn" id="noticeBtn" onclick="openNotice('alert')" title="通知：待处理 ＋ 已处理">
+          🔔 通知 <b class="nb" id="alertN" style="display:none">0</b>
+        </button>
+        <div class="menuwrap">
+          <button class="btn menu-btn" id="menuBtn" onclick="toggleMenu()" title="菜单">☰ 菜单</button>
+          <div class="menu-pop" id="menuPop">
+            <button class="mitem" onclick="openSettings(); closeMenu()"><span class="mico">⚙️</span><span class="mnm">设置</span></button>
+            <button class="mitem" onclick="openLogs(); closeMenu()"><span class="mico">📋</span><span class="mnm">日志</span></button>
+            <button class="mitem" onclick="openInbox(); closeMenu()"><span class="mico">📁</span><span class="mnm">我的文件夹</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col mid">
+      <!-- ⭐ 2026-10-06 改（老大：「办公室信息流改成聊天框」—— 指的是这里原来那六个字「办公室 · 消息流」）：
+           这栏标题现在就叫「聊天框」，而且**恒定为它**：点左栏某个成员不再改这里，
+           改成弹一个独立的成员窗（见下面 `maskMember`）—— 老大：「聊天框不用变」。 -->
+      <div class="chathead"><b id="chatName">聊天框</b><span id="chatSub">全部成员</span></div>
+      <!-- ⭐ 2026-10-06：成员卡原来插在**这里**（中栏顶部）；老大要"点成员弹一个独立窗口、聊天框不变"
+           ⇒ 它连同那段聊天记录一起挪进下面那个 `maskMember` 弹层了（id 仍是 `#memcard`，渲染它的 JS 不用改）。 -->
+      <div class="msgs" id="msgs"></div>
+      <div class="composer">
+        <div class="cbar">
+          <div class="modes" id="modes">
+            <span class="mslid" id="mslid"></span>
+            <button id="mMsg" class="on" onclick="setMode('msg')">💬 消息</button>
+            <button id="mTask" onclick="setMode('task')">📋 任务</button>
+          </div>
+          <div class="hint" id="modeHint"></div>
+        </div>
+
+        <div class="sendrow" id="rowMsg">
+          <input class="ipt" id="input" placeholder="输入消息…（不 @ 则发给全体；输入 @ 选择成员）" onkeydown="onMsgKey(event)" oninput="onMsgInput()">
+          <button class="btn pri" onclick="send()">发送</button>
+        </div>
+
+        <div class="taskform" id="rowTask" style="display:none">
+          <div class="tf-row"><div class="tf-lab">这是什么任务</div><input class="ipt grow" id="tfTitle" placeholder="一句话说明这批任务要做什么（必填）"></div>
+          <div class="tf-row"><div class="tf-lab">详细要求</div><input class="ipt grow" id="tfNote" placeholder="选填，可留空"></div>
+          <div id="tfSubs"></div>
+          <div class="tf-row">
+            <div class="tf-lab"></div>
+            <button class="btn" onclick="addSub()">＋ 再加一件</button>
+            <button class="btn pri" onclick="sendTask()">派发</button>
+            <span id="tfHint" style="color:var(--sub);font-size:11.5px;margin-left:auto;text-align:right;line-height:1.5"></span>
+          </div>
+        </div>
+        <!-- ⭐ 引用表（打 @ 弹的那张）挪到 composer 这一层（2026-10-04）：
+             原先它长在「消息态」的输入框里 ⇒ 任务态那个 div 是 display:none，点「给谁」根本弹不出来。
+             现在挂在 composer 上 ⇒ 两种模式共用同一张表（§7.6：任务态的"给谁"＝同一个引用表）。 -->
+        <div class="atbox" id="atbox"></div>
+      </div>
+    </div>
+
+    <div class="col right collapsed" id="colRight">
+      <!-- ⭐ 收起时**挂在右边那个小键**（2026-10-06 老大：「任务看板的按钮不要一整条下来，改成一个挂在侧边的键，
+           点下去才把整个任务看板拉出来，名字就任务两个字」）—— 点它把整块任务板拉出来。
+           ⚠️ 它固定在视口右侧、垂直居中（见 CSS），**不占列宽**；名字**只有「任务」两个字**（别加"板/版"）。 -->
+      <button class="rhandle" onclick="toggleBoard()" title="展开任务板">
+        <span class="txt">任务</span>
+      </button>
+      <div class="rbody">
+        <div class="colhead"><b>任务板</b><span>按天 · 点开看详细</span>
+          <span class="rfold" onclick="toggleBoard()" title="收起任务板">⟨ 收起</span></div>
+        <div style="margin-bottom:10px"><button class="btn" id="boardDateBtn" onclick="openDatePick('board')">📅 今天 ▾</button></div>
+        <div class="board" id="board"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="mask" id="maskLog">
+  <div class="modal">
+    <div class="mh">📋 日志 <span class="x" onclick="closeMask('maskLog')">✕</span></div>
+    <div class="mb">
+      <div style="margin-bottom:10px"><button class="btn" id="logDateBtn" onclick="openDatePick('log')">📅 今天 ▾</button></div>
+      <div id="logbody"></div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeMask('maskLog')">关闭</button></div>
+  </div>
+</div>
+
+<!-- ⭐ 2026-10-04 加：选日期弹层（任务板和日志共用）。
+     由来（老大 2026-10-04）：「日期不能这样子放吧，以后日期越来越多怎么办，应该是一个按钮按下去弹页面出来让我选吧」
+     ⇒ 原来那排日期页签（`.daytabs`）会越铺越长，换成"一个按钮 ＋ 这个弹层"。
+     里面用**系统自带日历**（能选任意日期、不随天数变长）＋ 前天／昨天／今天三个快捷键（今天在最右）。 -->
+<div class="mask" id="maskDate">
+  <div class="modal">
+    <div class="mh">📅 选日期 <span class="x" onclick="closeMask('maskDate')">✕</span></div>
+    <div class="mb">
+      <div class="setsub" style="margin-bottom:10px">选哪天就看那天的。那天没记录时：任务板显示"当天无任务"、日志显示"这天没有记录"。</div>
+      <div class="seg" id="dateQuick"></div>
+      <div class="setsub" style="margin-top:12px">也可以直接选任意日期：</div>
+      <input type="date" id="datePickInput" onchange="pickDate(this.value.replace(/-/g,''))"
+             style="margin-top:6px;width:100%;box-sizing:border-box;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:transparent;color:inherit;font:inherit">
+    </div>
+    <div class="mf"><button class="btn" onclick="closeMask('maskDate')">关闭</button></div>
+  </div>
+</div>
+
+<!-- ⭐ 2026-10-06：**通知弹层**（原来「⚠️ 待处理」`maskAlert` ＋ 「🗂 已处理」`maskHandled` 合成这一个；
+     老大：「待处理跟已处理改到一起，按钮叫做通知」）。同一个弹层里两个页签 ——
+       · 「待处理」＝当下还没消化的（`unreadAlerts()`；`refuse-dead` 必须点按钮才消）
+       · 「已处理」＝同一批条目的历史（后端日志，按日期翻；⚠️ 只读，不提供确认／重派）
+     ⚠️ 关窗时要分清：**这次看过「待处理」页才**把告知类标成"看过"（见 `closeNotice()`）——
+        只翻历史，不该顺手把未读清了。 -->
+<div class="mask" id="maskNotice">
+  <div class="modal">
+    <div class="mh">🔔 通知 <span class="x" onclick="closeNotice()">✕</span></div>
+    <div class="mb">
+      <div class="seg" style="margin-bottom:12px">
+        <button class="btn on" id="ntTabA" onclick="noticeTab('alert')">⚠️ 待处理</button>
+        <button class="btn" id="ntTabH" onclick="noticeTab('handled')">🗂 已处理</button>
+      </div>
+      <div id="noticePaneA">
+        <div id="alertbody"></div>
+      </div>
+      <div id="noticePaneH" style="display:none">
+        <div style="margin-bottom:10px"><button class="btn" id="handledDateBtn" onclick="openDatePick('handled')">📅 今天 ▾</button></div>
+        <div id="handledbody"></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn pri" onclick="closeNotice()">关闭</button></div>
+  </div>
+</div>
+
+<!-- ⭐ 2026-10-06 加（老大：「现在我要点成员卡就出来一个单独的窗口然后聊天框不用变」）——
+     点左栏某个成员 ⇒ 弹**这个**独立的窗，里面**只有成员卡详情**（`#memcard`，跟原来中栏顶部那张是同一个）。
+     中栏那个「聊天框」**一动不动**（永远全部消息）。
+     ⚠️ 成员卡上那些动作按钮（叫上线／踢下线／改忙闲…）都在 `#memcard` 里，渲染函数 `renderMemCard()` 一字未动。
+     ⚠️ **同日后改**：原来这窗里还挂着一段「与它的消息」（小标题 ＋ 聊天记录）；
+        老大说「与他的消息这种就不要了，直接显示成员卡详情就好了」⇒ **整块删掉**
+        （连带 `#mchat`／`renderMemberChat()`／`chatListFor()` 一起撤），现在就是一张成员卡。要看消息回中栏那个聊天框。 -->
+<div class="mask" id="maskMember">
+  <div class="modal">
+    <div class="mh"><b id="mTitle">成员</b><span id="mSub" style="color:var(--sub);font-size:12px;margin-left:8px"></span>
+      <span class="x" onclick="closeMember()">✕</span></div>
+    <div class="mb">
+      <div id="memcard"></div>
+    </div>
+    <div class="mf"><button class="btn pri" onclick="closeMember()">关闭</button></div>
+  </div>
+</div>
+
+<!-- ⭐ 2026-10-05 加：换人重派弹层（老大「那加吧」）。
+     由来：后端 `reassign` 工具早就在，**界面上一直没有入口** ⇒ 「待处理」里那句"往后全等你发话"
+     是句空话（老大自己派的活出了异常，没地方换人）。
+     ⚠️ 只对**老大自己派的任务**开放（`task.from === 'boss'`）—— 后端 `timeout.js` 的 `assignRetry()`
+     有校验「只能派发者本人发起」；AI 派的任务由它自己换人（自动，不必等老大）。 -->
+<div class="mask" id="maskReassign">
+  <div class="modal">
+    <div class="mh">🔁 换人重派 <span class="x" onclick="closeMask('maskReassign')">✕</span></div>
+    <div class="mb" id="reassignBody"></div>
+    <div class="mf"><button class="btn" onclick="closeMask('maskReassign')">算了</button></div>
+  </div>
+</div>
+
+  <!-- ⚠️ 「🗂 已处理」原本有个**独立弹层** `maskHandled`（2026-10-05 加）—— 2026-10-06 并进「🔔 通知」的页签了，
+       这里原本那块 HTML 已删。 -->
+
+<div class="mask" id="maskSet">
+  <div class="modal">
+    <div class="mh">⚙️ 设置 <span class="x" onclick="closeMask('maskSet')">✕</span></div>
+    <div class="mb">
+
+      <div class="setrow">
+        <div class="sethead">主题</div>
+        <div class="setsub">选完会记住，下次打开还是它。</div>
+        <div class="seg">
+          <button class="btn" id="segLight" onclick="setTheme('light')">☀️ 亮色</button>
+          <button class="btn" id="segDark" onclick="setTheme('dark')">🌙 暗色</button>
+        </div>
+      </div>
+
+      <div class="setrow">
+        <div class="sethead">我的文件夹</div>
+        <div class="setsub">「📁 我的文件夹」按钮打开的地方。填绝对路径（不存在会自动建）；留空保存 ＝ 恢复默认。</div>
+        <div style="display:flex;gap:8px">
+          <input id="myPathInput" onkeydown="if(event.key==='Enter'){event.preventDefault();saveMyFolder();}" placeholder="比如 D:\我的文件" style="flex:1;min-width:0;box-sizing:border-box;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:transparent;color:inherit;font:inherit">
+          <button class="btn" onclick="browseFolder()" title="打开系统的「选择文件夹」窗口">浏览…</button>
+        </div>
+        <div class="setstate" id="myPathHint"></div>
+        <!-- ⭐ 2026-10-04 挪进来（老大指出）：这两个键**只管本模块**（我的文件夹），
+             原来摆在**整个面板的最底下**，会让人以为是在"保存全部设置" —— 误导。 -->
+        <div style="margin-top:11px;display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn" onclick="resetMyFolder()">恢复默认</button>
+          <button class="btn pri" onclick="saveMyFolder()">保存</button>
+        </div>
+      </div>
+
+      <div class="setrow">
+        <div class="sethead">调试模式</div>
+        <div class="setsub">⚠️ <b>仅供测试的临时开关</b>：开启后，「<b>未连接则禁止调用工具</b>」这项校验会被<b>跳过</b>（等于任何成员都能调用）。
+          <br>⛔ <b>平时必须保持关闭</b>：开启期间的每一次调用都会记入日志，界面顶部会显示红色提示条；使用后请及时关闭。</div>
+        <div class="seg">
+          <button class="btn" id="segDebugOn" onclick="setDebug(true)">⚠️ 开启（跳过校验）</button>
+          <button class="btn" id="segDebugOff" onclick="setDebug(false)">✅ 关闭（默认）</button>
+        </div>
+        <div class="setstate" id="debugHint"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="mask" id="maskKick">
+  <div class="modal" style="width:min(430px,92vw)">
+    <div class="mh">🚫 踢下线 <span class="x" onclick="closeMask('maskKick')">✕</span></div>
+    <div class="mb" id="kickBody" style="line-height:1.95"></div>
+    <div class="mf">
+      <button class="btn" onclick="closeMask('maskKick')">算了</button>
+      <button class="btn danger" onclick="doKick()">踢下线</button>
+    </div>
+  </div>
+</div>
+
+<div class="mask" id="maskBusy">
+  <div class="modal" style="width:min(470px,92vw)">
+    <div class="mh">🕒 改忙闲 <span class="x" onclick="closeMask('maskBusy')">✕</span></div>
+    <div class="mb" id="busyBody" style="line-height:1.95"></div>
+    <div class="mf">
+      <button class="btn" onclick="closeMask('maskBusy')">算了</button>
+      <button class="btn pri" onclick="doSetBusy()">确认改</button>
+    </div>
+  </div>
+</div>
+
+<div class="tips" id="tips"></div>
+
+<script>
+/* ============ M10 · 真数据版：数据全部走后端 HTTP 接口（M8 8787） ============ */
+const API = 'http://127.0.0.1:8787';
+const $ = s => document.querySelector(s);
+let cur = 'boss';
+let inboxPath = '';
+let inboxCustom = false;   /* 「我的文件夹」是不是老大自己定的（false ＝ 默认收件目录） */
+let MEMBERS = [], ALLMSGS = [], TASKS = [], ALERTS = [];
+let LOGS = {};          // 日期YYYYMMDD -> 日志行
+let logDate = '';       /* ⭐ 2026-10-04：日志在看哪一天（空串＝今天） */
+let boardDate = '';     /* ⭐ 2026-10-04：任务板在看哪一天（空串＝今天；每 5 秒重渲染时靠它保持） */
+let handledDate = '';   /* ⭐ 2026-10-05：已处理（告警历史）在看哪一天（空串＝今天） */
+let datePickFor = 'board';  /* ⭐ 选日期弹层这一次是给谁选的：'board' | 'log' | 'handled' */
+let openTask = null;   // 任务板里展开的那件（每 5 秒重渲染时靠它恢复）
+
+function tips(t){ const el=$('#tips'); el.textContent=t; el.classList.add('on'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('on'),1900) }
+
+/* ⭐⭐ 2026-10-05：**界面口令** —— `boss` 这个身份**只有界面在用**，而"顺手报一行 boss"谁都会
+   ⇒ 界面调工具时要把口令带上（由壳每次启动随机生成、拼在本页 URL 上，正本见 `接入\01` §2.4）。
+   ⚠️ 拿到就**立刻从地址栏抹掉** —— WebView2 会把 URL 留在它自己的数据目录里，留着等于写在盘上。
+   （`file://` 页面对 `replaceState` 有 origin 限制，抹不掉就被 catch 吞掉：那是门槛级，不是漏洞级。） */
+const UI_TOKEN = (() => {
+  // ⭐ 2026-10-06：**优先用后端注入的那份**（页面由后端的 `GET /ui` 发出来时带的
+  //    `window.__OFFICE_UI_TOKEN__`）—— 那样口令**不进地址栏、不进历史**。
+  //    没有注入才回落到 URL 的 `?uitoken=`（壳的老路／手工拼 URL 时用）。
+  const injected = (typeof window.__OFFICE_UI_TOKEN__ === 'string') ? window.__OFFICE_UI_TOKEN__ : '';
+  if (injected) return injected;
+  const m = /[?&]uitoken=([0-9a-fA-F]+)/.exec(location.search || '');
+  const t = m ? m[1] : '';
+  if (t) { try { history.replaceState(null, '', location.pathname); } catch(e){} }
+  return t;
+})();
+
+async function callTool(tool, args={}){
+  const headers = {'Content-Type':'application/json'};
+  if (UI_TOKEN) headers['X-Office-UI'] = UI_TOKEN;
+  const r = await fetch(API+'/api/call', {method:'POST', headers, body: JSON.stringify({memberId:'boss', tool, args})});
+  const j = await r.json();
+  if(!j.ok) throw new Error((j.error||'接口错误') + (j.notify?('：'+j.notify):''));
+  return j.data;
+}
+
+/* ---- 工具函数 ---- */
+function initial(n){ return (n||'?').slice(-1) }
+function stateText(s){ return {working:'干着',delivered:'待验',done:'已完',blocked:'卡住',cancelled:'已取消'}[s]||s }
+function memberOf(id){
+  const m = MEMBERS.find(x=>x.id===id);
+  if(!m) return {id, name: id==='boss'?'老大':(id==='system'?'系统信息':id), model:'', color:'#86909c'};
+  return m;
+}
+/* ⭐ 2026-10-05 加：系统自己干的那类（判挂／超时／代收／自动验收，`source: 'system'`）
+   在界面上**统一叫「系统信息」** —— 让老大一眼看出"这不是谁说的话，是系统告诉我的一件事"。
+   ⚠️ 它不是成员（`members` 里查不到）⇒ 原来渲染出来是英文小写 `system`。 */
+function dispName(m){ return m.id==='boss' ? '老大' : (m.id==='system' ? '系统信息' : (m.name || ('成员-'+String(m.id).slice(0,4)))); }
+/* ⭐ 名字显示（2026-10-04 老大定：**宿主进程名、昵称都显示**，正本 规范\04 §1／§7.6 ＋ `02` §3）：
+   · nm2(m)      → HTML 片段：**宿主进程名在前、昵称在后**并排（没昵称就只出宿主进程名）
+   · nameFull(m) → 同一形态的纯文本（给 textContent／`@` 插入／聊天抬头用）
+   · nickOf(m)   → 只取昵称（没有就空串）
+   ⚠️ 别在文本里用 nm2、也别在 HTML 里用 nameFull（前者会漏标签、后者会被 esc 掉）。 */
+function nickOf(m){ return (m && m.nick) ? String(m.nick).trim() : ''; }
+function nameFull(m){ const n = dispName(m || {id:'?'}), k = nickOf(m); return k ? (n + ' ' + k) : n; }
+function nm2(m){ const n = dispName(m || {id:'?'}), k = nickOf(m); return esc(n) + (k ? `<span class="nk">${esc(k)}</span>` : ''); }
+function dispModel(m){ return m.id==='boss' ? '（不接任务、不下场）' : (m.model || ''); }
+/* ⭐ 2026-10-06：头像底色改走**主题变量**（原来写死 boss 紫 `#7c4dff`、其他人 `#86909c`）——
+   换主题它会跟着走；而且灰底从 `#86909c` 换成 `--sub` 后，上面那层白字对比度也达标了。
+   ⚠️ `m.color` 是数据里自带的颜色，优先用它（成员自己定的色不该被主题盖掉）。 */
+function dispColor(m){ return m.color || (m.id==='boss' ? 'var(--blue)' : 'var(--sub)'); }
+/* 在线／忙闲的口径（2026-10-04 改，正本 规范\状态\01＋\02）：
+   在线两档 online／offline、忙闲两档 busy／idle —— 旧代码里那两档 awaiting（等验）与 ghost（在线未接任务）
+   **已经砍掉了**，别再显示。⚠️ 离线／断开的人，忙闲那一栏是空值 ⇒ 只写"离线"就好。 */
+function statusLabel(m){
+  if(m.id==='boss') return '在线';   /* ⭐ 2026-10-06 老大：原来这里写死「主人」，改成「在线」 */
+  if(m.presence==='offline') return '离线';
+  return m.busy==='busy' ? '忙' : (m.busy==='idle' ? '空闲' : '在线');
+}
+function dotClass(m){
+  if(m.presence==='offline') return 'd-off';
+  return m.busy==='busy' ? 'd-busy' : 'd-on';
+}
+/* 头像：优先用 AI 交上来的图标，没交（或者图挂了）就退回字母块。
+   ⚠️ 后端存的 icon 是**纯 base64**、不带 "data:image/png;base64," 前缀（见 members.js 的 toBase64）⇒ 由这里拼。
+   onerror 把图整个删掉 ⇒ 底下那层字母露出来（万一交的是 jpg／ico，MIME 对不上也不会留个破图）。 */
+/* ⭐⭐ 2026-10-05 修（安全 · XSS）：**头像只认纯 base64 字符**，别的字符一律丢掉。
+   由来：后端存 icon 是"原样字符串"（`members.setIcon` 只限长度、不限字符），而这里**直接把它拼进
+   HTML 属性**（`src="data:image/png;base64,${ico}"`）⇒ 一个成员把头像交成 `x" onerror="…`
+   就能在**这一页**里跑脚本 —— 而本页手里握着 **boss 的口令（UI_TOKEN）**，等于把身份交出去。
+   三处用到头像的地方（左栏／成员卡／@引用表）**一律走这个函数**，改一处就够。 */
+function iconAttr(ico){
+  const s = String(ico || '');
+  return /^[A-Za-z0-9+/=]+$/.test(s) ? s : '';
+}
+function avaHtml(m, big, noDot){
+  const nm = dispName(m || {id:'?'}), ico = iconAttr(m && m.icon);
+  return `<div class="ava${big?' big':''}" style="background:${dispColor(m||{id:'?'})}">${initial(nm)}${ico?`<img src="data:image/png;base64,${ico}" onerror="this.remove()">`:''}${noDot?'':`<div class="dot ${dotClass(m||{id:'?'})}"></div>`}</div>`;
+}
+/* 时间显示（2026-10-04 改；同日二次修）：要认**三种写法** ——
+   ① ISO 带时区（规范 01 §2 建议的形态，例 2026-10-04T05:10:00+08:00，AI 侧多半这么发）
+   ② 14 位数字戳（例 20261004051000，system 消息的 time 就是这种）
+   ③ **任务号**（例 00003-20261004153109 —— 任务板直接拿 id 当时间用）
+   第一次修只做了"剔掉非数字再切"：碰上 ③ 会把前缀 00003 一起剔进来（19 位）⇒ 按位置切就错位
+   （实测任务板把 15:31 显示成「61:00」）⇒ 现在**先认「-」后面那 14 位**，认不到才回退到剔非数字。 */
+function tsParts(ts){
+  const s = String(ts||'');
+  const hit = s.match(/-(\d{14})\s*$/);          // ③ 任务号：取「-」后面那 14 位
+  const d = hit ? hit[1] : s.replace(/\D/g, ''); // ① ② 回退：剔非数字，前 14 位即时间
+  if(d.length < 14) return null;
+  return { mo:d.slice(4,6), d:d.slice(6,8), h:d.slice(8,10), mi:d.slice(10,12) };
+}
+function fmtTime(ts){ const p = tsParts(ts); return p ? p.h + ':' + p.mi : ''; }
+function fmtDate(ts){ const p = tsParts(ts); return p ? p.mo + '-' + p.d : ''; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function linkify(txt){
+  return esc(txt)
+    /* ⚠️ 拼进 onclick 前**必须把反斜杠双写**：`onclick="openFolder('…')"` 里那一串是 **JS 源码**，
+       单个 `\` 会被当转义符吃掉 ⇒ `D:\a\b` 变成 `D:ab` ⇒ 后端 `path.isAbsolute` 判 false ⇒
+       界面弹「打不开：要绝对路径」。2026-10-04 实测复现，测法见 `临时\测路径拼接.mjs`。
+       顺手把单引号也转义，免得到时候路径里带 `'` 把 onclick 截断。 */
+    .replace(/D:\\[^\s，。）]+/g, p=>{
+      const js = p.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return `<span class="dir" onclick="openFolder('${js}')">📁 ${p}</span>`;
+    })
+    .replace(/@([\u4e00-\u9fa5\w]+)/g,'<span class="at">@$1</span>');
+}
+function todayStamp(){ const d=new Date(), p=x=>String(x).padStart(2,'0'); return ''+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate()); }
+function stampNow(){ const d=new Date(), p=x=>String(x).padStart(2,'0'); return ''+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds()); }
+/* ⭐ 2026-10-04 加：往前数第 n 天的戳（n=0 就是今天）。n 取负数就是往后（例 `-1` ＝ 明天），
+   ⚠️ **但当前用不到** —— 快捷只用 0／1／2，未来日期整体不做（见 `dayLabel` 与选日期弹层那几处注释）。 */
+function dayStampBack(n){
+  const d = new Date(), p = x => String(x).padStart(2,'0');
+  d.setDate(d.getDate() - n);
+  return ''+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate());
+}
+/* 日期戳 `YYYYMMDD` → `<input type="date">` 要的 `YYYY-MM-DD`（`value` 与 `max` 都用它）。 */
+function isoDate(ds){ return ds.slice(0,4) + '-' + ds.slice(4,6) + '-' + ds.slice(6,8); }
+/* ⭐ 2026-10-04：日期戳 → 显示成「今天 10-04」这种（日期按钮和选日期弹层共用）。
+   ⚠️ 非特殊日子（`dayLabel` 已经返回 `MM-DD`）**别再拼一次**，否则会显示成「10-07 10-07」。 */
+function dateText(ds){
+  const label = dayLabel(ds);
+  const mmdd = ds.slice(4,6) + '-' + ds.slice(6,8);
+  return (label === mmdd) ? label : (label + ' ' + mmdd);
+}
+function dayLabel(ds){
+  const today = todayStamp();
+  if(ds === today) return '今天';
+  /* ⭐ 2026-10-04 改：原来是"一天天 +1 去比对"，只能认过去的日子；改成**算相差几天**，前后都能认
+     （老大：「三个快捷的应该昨天今天明天，今天在中间」⇒ "明天"要显示成"明天"，不是 `10-05`）。 */
+  const toDate = s => new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8));
+  const diff = Math.round((toDate(today) - toDate(ds)) / 86400000);   // >0 ＝ 比今天早几天
+  if(diff === 1) return '昨天';
+  if(diff === 2) return '前天';
+  /* ⚠️ 只认**过去**：未来日期进不来（选日期弹层两道卡：日历 `max` ＋ `pickDate` 拦），
+     别再加"明天／后天"分支 —— 那两行永远走不到（2026-10-04 老大：「明天都还没来呢做明天干什么」）。 */
+  return ds.slice(4,6)+'-'+ds.slice(6,8);
+}
+
+/* ---- 数据加载 ----
+   ⭐ 2026-10-05 改（省请求）：**"变化慢的"那两样（当天日志、我的文件夹）每 6 轮才拉一次**（≈30 秒）。
+   原来每 5 秒固定 6 个工具调用，而 `read_log` 在后端是**把当天日志整份读一遍**、`inbox_path` 读设置文件
+   —— 这两样都不会秒变。其余四样（成员／消息／任务／待处理）照旧每 5 秒（那才是要"实时"的）。
+   ⚠️ 首轮 `_slowTick` 是 0 ⇒ **一定会拉**，开局数据是齐的。 */
+let _slowTick = 0;
+async function loadAll(){
+  try{
+    const slow = (_slowTick++ % 6) === 0;
+    const reqs = [
+      callTool('get_members',{}),
+      callTool('read_messages',{limit:300}),
+      callTool('list_tasks',{}),
+      callTool('pending_alerts',{})
+    ];
+    if (slow) { reqs.push(callTool('read_log',{})); reqs.push(callTool('inbox_path',{})); }
+    const [m, msgs, t, alerts, todayLog, inbox] = await Promise.all(reqs);
+    MEMBERS = m.members||[];
+    ALLMSGS = msgs.messages||[];
+    TASKS = t.tasks||[];
+    ALERTS = alerts.alerts||[];
+    if (inbox) { inboxPath = inbox.path||''; inboxCustom = !!inbox.isCustom; }
+    if(todayLog && todayLog.date) LOGS[todayLog.date] = todayLog.entries||[];
+    /* ⭐ 同时只有一个主任务（规范 04 §7.6）：有任务没 over ⇒ 任务态当面提示他"现在派会被拒" */
+    MAIN_RUNNING = (TASKS.find(t => !t.closed) || {}).id || '';
+    renderMembers(); renderMemCard(); renderChat(); renderBoard();
+    if(mode === 'task') paintTaskHint();
+    refreshAlertBadge();
+    /* ⭐ 2026-10-06 加：**恢复了就把"连不上"标记灭掉**（配合下面 catch 里那句） */
+    if (connDown) { connDown = false; setConnBadge(false); }
+  }catch(e){
+    /* ⭐ 2026-10-06 改：原来这里**每失败一次就 tips 一次**，而 `loadAll` **每 5 秒跑一轮**
+       ⇒ 后端一断，toast 就每 5 秒刷一条：又吵、又正好盖住输入区（要接着打字的人被挡）。
+       现在：**顶栏挂一条持久标记**（断了亮、通了灭），toast 只在"刚断的那一下"给一次。 */
+    if (!connDown) { connDown = true; tips('接口连接失败：' + e.message); }
+    setConnBadge(true);
+  }
+}
+
+/* ---- 左栏：成员 ---- */
+let memListCache = '';
+function renderMembers(){
+  const html = MEMBERS.map(m=>`
+    <div class="mem ${m.id===cur?'on':''}" onclick="pick('${m.id}')">
+      ${avaHtml(m)}
+      <div class="nm">
+        <b>${nm2(m)}${m.id==='boss'?' <span class="tag me">你</span>':''}</b>
+        <span>${dispModel(m)}</span>
+      </div>
+      <div style="margin-left:auto;flex:none"><span class="tag">${statusLabel(m)}</span></div>
+    </div>`).join('');
+  /* ⭐ 2026-10-06：`loadAll` 每 5 秒无条件重画一次左栏 ⇒ 鼠标悬停的那一行会**每 5 秒闪一下**
+     （hover 态是浏览器挂在 DOM 上的，innerHTML 一重建就没了）。
+     ⇒ 改成"**内容真变了才动 DOM**"：一样就直接跳过。 */
+  if (html !== memListCache){ memListCache = html; $('#memlist').innerHTML = html; }
+  const on = MEMBERS.filter(m=>m.presence!=='offline').length;
+  $('#onNum').textContent = on + ' 在线';
+}
+
+/* ---- 中栏：成员卡 ----
+   点左栏谁就摊开谁（cur）。老板那条是"消息流"，不摊卡。 */
+function renderMemCard(){
+  const box = $('#memcard');
+  if(!box) return;
+  if(cur === 'boss'){ box.innerHTML = ''; return; }
+  const m = memberOf(cur);
+  if(!m){ box.innerHTML = ''; return; }
+  /* 正在干哪件：一个人同一时间只有一件任务（规范 03:296），所以这里最多一条。
+     ⚠️ 原先这里数"手上有几件事"，老大指出那数字能从忙闲直接推出来、是废话（2026-10-03）⇒ 改成列出这件任务。 */
+  const doing = [];
+  TASKS.forEach(t=>{
+    if(t.closed) return;
+    (t.subtasks||[]).forEach(s=>{ if(s.to===cur && (s.state==='working' || s.state==='delivered')) doing.push(s); });
+  });
+  const items = doing.length
+    ? doing.map(s=>`<div class="it">· <span class="st s-${s.state}">${stateText(s.state)}</span> ${s.id}：${esc(s.note||'')} <span class="k">· 跑 ${s.rounds} 轮</span></div>`).join('')
+    : '<div class="it">手上没任务</div>';
+  const rel = ALLMSGS.filter(x=>x.source===cur || (Array.isArray(x.to)&&x.to.includes(cur)));
+  const last = rel.slice(-1)[0];
+  box.innerHTML = `
+    <div class="mc">
+      ${avaHtml(m, true)}
+      <div class="mcinfo">
+        <div class="nm"><b>${nm2(m)}</b><span class="tag">${esc(m.id)}</span><span class="tag">${statusLabel(m)}</span><span class="tag">${m.connected ? '已连接' : '未连接'}</span></div>
+        <div class="ln"><span class="k">模型</span>${esc(dispModel(m))}</div>
+        ${items}
+        <div class="ln"><span class="k">最近消息</span>${last ? fmtTime(last.time) + ' · ' + typeText(last) : '（还没有）'}</div>
+        <div class="ln" style="margin-top:9px">${memCardAction(m)}</div>
+      </div>
+    </div>`;   /* ⚠️ 2026-10-06：卡片自己那个 ✕ 已删（跟弹层标题栏的 ✕ 功能重复，老大指出）。
+                ⚠️ 教训：**说明别写进模板字符串里** —— 我一度在里面塞了段 HTML 注释，
+                注释里带反引号（模板的定界符）⇒ 字符串被提前截断、整段脚本语法报错、界面全白。
+                要在渲染模板旁边留说明，就写在模板**外面**（像这句）。 */
+}
+
+/* 踢下线（2026-10-03 加：老大要成员卡上有红色踢出按钮）
+   语义就是规范里的"踢下线"（03 §2.2 三型之外的老大手动触发）：判离线 + 日志留痕；
+   要它回来得老大点这张卡上的「叫它上线」（§3.1：回来＝在线＋空闲，原来那件不自动还它）。 */
+let kickTarget = '';
+function kickMember(id){
+  if(!id) return;
+  kickTarget = id;
+  const m = memberOf(id) || {};
+  const b = $('#kickBody');
+  if(b) b.innerHTML = `把 <b>${nm2(m)}</b> <span class="tag">${esc(id)}</span> 踢下线？<br>
+    <span style="opacity:.75;font-size:13px">踢下线后，该成员需被重新叫醒才能上线；回来时为在线 ＋ 空闲，原任务不会自动归还。</span>`;
+  $('#maskKick').classList.add('on');
+}
+async function doKick(){
+  const id = kickTarget; if(!id) return;
+  try{
+    const d = await callTool('kick_member',{id});
+    closeMask('maskKick');
+    tips('已踢下线：'+((d&&d.id)||id));
+    pick('boss');          /* 收起它的卡（人已经下线了） */
+    loadAll();
+  }catch(e){ tips('踢下线失败：'+e.message); }
+}
+
+/* 成员卡底部那排按钮（2026-10-03 加；⭐ 2026-10-04 补上「连接／断开」）：
+   ⭐ 老大 2026-10-03：「办公室那边也是啊要有两个按钮」「一边变了另一边也要跟着变」
+   ⭐ 2026-10-04 补：规范 `接入\01` §2.1 那张表说**办公室的成员卡上也该有这两个按钮**
+      （「连接」管第一层、「上线」管第二层）⇒ 「连接」这个口这儿也要有。
+      做法（§2.4）：**办公室去敲插件** —— 后端 `connect_member` ⇒ 插件收到就去挂流／把那流掐掉，
+      跟"人在插件上点连接"**完全同一个动作**。
+   ⚠️ **第一层只有人能控**（§2.1）⇒ `connect_member` **只认 boss**，AI 调不动。
+   ⚠️ 下面那句旧注释"连接是插件自己挂的、办公室管不着"**已作废**（2026-10-04 定：两头都能发起）。 */
+function memCardAction(m){
+  if(!m || m.id === 'boss') return '';        /* 老大自己的卡不给按钮 */
+  const off = (m.presence === 'offline');
+  const conn = (m.connected === true);        /* ⭐ 第一层：它那条线还挂着没（规范 查询\01 §7 的"连接"那一格） */
+  const calling = (m.calling === true);       /* ⭐ 刚叫过、还没上线 ⇒ 按钮灰着防重复点（后端也会拦，2026-10-04 老大定） */
+  /* ⭐ 2026-10-04 补：「叫它上线」什么时候**根本不该能点** —— 三档，灰了要说清为什么
+     （规范 `01` §2.1：「**灰 ＝ 那条路真的走不通**，插件和后端都要拦」）：
+       ① 它**没连着**（第一层断了）⇒ 叫了也上不了线（§2.1"第一层断了 ⇒ 第二层失效"）
+       ② 刚叫过、还没上线（`calling`）⇒ 防重复点
+       ③ 它已经在线了 ⇒ 没必要再叫 */
+  const noCallWhy = (m.connected !== true)
+    ? '该成员未连接，请先点「连接」'
+    : (calling ? '已叫过，等待其自行上线' : ((!off) ? '该成员已在线' : ''));
+  return `<div class="memacts">
+    <button class="btn" onclick="doConnect('${esc(m.id)}', ${conn ? 'false' : 'true'})">${conn ? '🔌 断开连接' : '🔌 连接'}</button>
+    <button class="btn danger" onclick="kickMember('${esc(m.id)}')" ${off ? 'disabled title="该成员已离线"' : ''}>🚫 踢下线</button>
+    <button class="btn" onclick="doOnline('${esc(m.id)}')" ${noCallWhy ? `disabled title="${noCallWhy}"` : ''}>${calling ? '📞 正在叫…' : '📞 叫它上线'}</button>
+    <button class="btn" onclick="askBusy('${esc(m.id)}')" ${off ? 'disabled title="该成员已离线，忙闲无值"' : ''}>🕒 改忙闲</button>
+  </div>`;
+}
+/* ⭐ 办公室这边点「连接／断开」（2026-10-04 加，规范 `接入\01` §2.1／§2.4）：
+   后端 `connect_member` 会去敲插件那个口 ⇒ 插件去挂流／掐流 ⇒ 两边读同一份状态（§2.1）。
+   ⚠️ 失败时说人话（老大 2026-10-03：「一定要中文不然我看不懂」）。 */
+async function doConnect(id, on){
+  if(!id) return;
+  try{
+    const d = await callTool('connect_member', { id, on: !!on });
+    tips(on ? ('已连上：' + ((d && d.id) || id)) : ('已断开：' + ((d && d.id) || id)));
+    loadAll();
+  }catch(e){ tips((on ? '连接失败' : '断开失败') + '：' + e.message); }
+}
+/* ⭐ 改忙闲（2026-10-04 加，规范 04 §7.1 老大定）：
+   点成员卡上这个口 ⇒ 弹一层、**确认了才真改**；调后端 set_busy（只认 boss，AI 拿不到这个口）。
+   底下的道理（原话在 状态\02）：平时忙闲是系统按消息流自动判的，这个口是留给老大纠错的 ——
+   改完只在"账本没变化"期间有效，账本一变就回到系统判。 */
+let busyTarget = '', busyWant = '';
+function askBusy(id){
+  if(!id) return;
+  const m = memberOf(id); if(!m) return;
+  busyTarget = id;
+  busyWant = (m.busy === 'busy') ? 'idle' : 'busy';   /* 默认给"反着来"那档：想翻一下只要点确认 */
+  paintBusy();
+  $('#maskBusy').classList.add('on');
+}
+function paintBusy(){
+  const m = memberOf(busyTarget) || {};
+  const cur = (m.busy === 'busy') ? '忙' : (m.busy === 'idle' ? '空闲' : '没显示');
+  const b = $('#busyBody'); if(!b) return;
+  b.innerHTML = `
+    <div style="line-height:1.9"><b>${nm2(m)}</b> <span class="tag">${esc(busyTarget)}</span> 现在：<b>${cur}</b></div>
+    <div style="opacity:.72;font-size:12.5px;line-height:1.8;margin-top:5px">该栏平时由系统按消息流自动判定，此处可手动纠正；仅在该成员的任务无变化期间有效，任务状态一变即恢复系统判定。</div>
+    <div class="setsub" style="margin-top:12px">改成：</div>
+    <div class="seg">
+      <button class="btn ${busyWant==='busy'?'on':''}" onclick="busyWant='busy';paintBusy()">🕒 忙</button>
+      <button class="btn ${busyWant==='idle'?'on':''}" onclick="busyWant='idle';paintBusy()">☕ 空闲</button>
+    </div>
+    <div style="margin-top:13px;font-size:13px">确认要把 <b>${nm2(m)}</b> 改成 <b>${busyWant==='busy'?'忙':'空闲'}</b> 吗？</div>`;
+}
+async function doSetBusy(){
+  const id = busyTarget; if(!id) return;
+  try{
+    const d = await callTool('set_busy', { id, busy: busyWant });
+    closeMask('maskBusy');
+    tips('已改成：' + ((d && d.busy) === 'busy' ? '忙' : '空闲'));
+    loadAll();
+  }catch(e){ tips('修改失败：' + e.message); }
+}
+async function doOnline(id){
+  if(!id) return;
+  try{
+    // ⭐ 2026-10-04 改口径：「叫它上线」＝**只把它叫醒**（办公室**不替它上线**、也不替它绑会话）——
+    //    上线由 AI 自己完成 ⇒ **点完卡上会先显示"离线"**，等它自己上线才变"在线"（不给"正在叫"的中间态）。
+    const d = await callTool('call_online',{id});
+    tips('已通知上线：'+((d&&d.id)||id)+'（该成员上线后此处才会更新）');
+    loadAll();               /* 刷新左栏 + 重画这张卡（按钮会跟着变回"踢下线"） */
+  }catch(e){ tips('上线通知失败：'+e.message); }
+}
+
+/* ⭐ 2026-10-06 改（老大：「现在我要点成员卡就出来一个单独的窗口然后聊天框不用变，
+   现在点下去是变成只显示那个成员的聊天记录」）——
+   点左栏某个成员 ⇒ **弹一个独立的成员窗**（**只有成员卡详情**；原来还挂过一段"与它的消息"，同一天撤了）；
+   中栏那个「聊天框」**一动不动**（永远全部消息、标题永远「聊天框」）。
+   点你自己那条（boss）＝把窗口收起来。 */
+function pick(id){
+  if (id === 'boss'){ closeMember(); return; }
+  const m = memberOf(id);
+  if (!m) return;
+  cur = id;
+  renderMembers();
+  $('#mTitle').textContent = nameFull(m);
+  $('#mSub').textContent = dispModel(m) + ' · ' + statusLabel(m);
+  $('#maskMember').classList.add('on');
+  renderMemCard();
+}
+/** 关成员窗（✕／关闭／踢下线之后都走它）：`cur` 归位到"你自己"，左栏那条高亮也跟着回去 */
+function closeMember(){
+  closeMask('maskMember');
+  cur = 'boss';
+  renderMembers();
+  renderMemCard();     /* cur 回到 boss ⇒ 它自己会把卡清空 */
+}
+
+/* ---- 中栏：消息 ---- */
+function typeText(m){
+  const map = {'register':'接入','presence':'在线','heartbeat':'心跳','task.assign':'派发','task.ack':'收条','task.status':'状态','task.deliver':'交付','task.over':'结案','task.refuse':'拒收','chat.message':'消息'};
+  return map[m.type] || m.type || '消息';
+}
+function cardOf(m){
+  if(m.type==='task.assign' && m.data){
+    const subs = (m.data.subtasks||[]).map(s=>`· ${nameFull(memberOf(s.to))}：${s.note||''}`).join('\n');
+    return {st:'working', h:'派发 · 主任务 '+(m.data.task||''), kv:`派发者：${nameFull(memberOf(m.source))}\n内容：${m.data.title||''}\n备注：${m.data.note||''}\n子任务清单：\n${subs}`};
+  }
+  if(m.type==='task.deliver' && m.data){
+    return {st:'delivered', h:'交付 · 子任务 '+(m.data.task||''), kv:`执行者：${nameFull(memberOf(m.source))}\n产出：${m.data.where||m.data.path||m.data.output||''}\n备注：${m.data.note||''}`};
+  }
+  if(m.type==='task.over' && m.data){
+    return {st:'done', h:'结案 · 主任务 '+(m.data.task||''), kv:`报的人：${nameFull(memberOf(m.source))}\n备注：${m.data.note||''}`};
+  }
+  if(m.type==='task.refuse' && m.data){
+    return {st:'cancelled', h:'拒收 · 子任务 '+(m.data.task||''), kv:`谁拒：${nameFull(memberOf(m.source))}\n原因：${m.data.reason||m.data.why||''}`};
+  }
+  return null;
+}
+/* ⭐ 正文（2026-10-04 补）：`task.*` 类的 `data` 是**结构化字段**（task／note／state／where），
+   **没有 `text`** ⇒ 老代码只读 `data.text` ⇒ 一律渲染成**空气泡**（07:30 那两条 system 消息就是）。
+   这里按类型拼一句人话；认不出的类型用 note／title／where 兜底。
+   ⚠️ 有卡片的四种（派发／交付／结案／拒收）**正文留空**，让卡片自己说 —— 免得同一件事写两遍。 */
+function bodyOf(m){
+  const d = (m && m.data) || {};
+  if (typeof d.text === 'string' && d.text) return d.text;      /* chat.message 这类有正文的 */
+  switch (m.type){
+    case 'task.assign': case 'task.deliver': case 'task.over': case 'task.refuse': return '';
+    case 'task.ack':    return '我收到了' + ((d.note && !/^收(到|到了)$/.test(String(d.note))) ? '　（' + d.note + '）' : '');
+    case 'task.status': {
+      const head = (d.state === 'done' ? '验收通过' : d.state === 'blocked' ? '卡住了' : (d.state || '状态'));
+      const nt = String(d.note || '').trim();
+      /* ⭐ 2026-10-05：**没带 `state` 的就是纯告知**（例：系统代收那条"…系统替你收口了"）
+         ⇒ 直接说原话，别在前面糊一个"状态：" */
+      if (!d.state) return nt;
+      /* ⚠️ note 常跟主词重样（例 note 也写"验收通过"）⇒ 一样就别再拼一遍 */
+      return (nt && nt !== head) ? (head + '：' + nt) : head;
+    }
+    default: { const s = d.note || d.title || d.where || d.why || ''; return s ? String(s) : ''; }
+  }
+}
+/* ⭐ 2026-10-06：中栏那个「聊天框」＝ `renderChatInto('#msgs', ALLMSGS)` —— **永远全部消息**，不跟着 `cur` 变
+   （老大：「点成员卡就出来一个单独的窗口然后聊天框不用变」）。
+   ⚠️ 成员窗里那段聊天记录**已撤**（老大：「与他的消息这种就不要了，直接显示成员卡详情就好了」）⇒
+      现在只剩中栏这一处调它；容器和名单做成参数留着（以后要改起来省事），**但别再往成员窗里塞第二份消息**。 */
+function renderChat(){ renderChatInto('#msgs', ALLMSGS); }
+let chatCache = '';
+function renderChatInto(boxSel, list){
+  /* ⭐⭐ 2026-10-05 修：先把"他现在贴没贴底"记下来 —— 见函数末尾那段（原来无条件拉到底，
+     而 `loadAll` 每 5 秒重画一次 ⇒ 往上翻旧消息时每 5 秒被拽回去）。 */
+  const box0 = $(boxSel);
+  const prevTop = box0 ? box0.scrollTop : 0;
+  const stickBottom = !box0 ? true : (box0.scrollHeight - box0.scrollTop - box0.clientHeight < 40);
+  if(!list.length){
+    const empty = `<div class="daysep"><span>还没有消息</span></div>`;
+    if (box0 && empty !== chatCache){ chatCache = empty; box0.innerHTML = empty; }
+    return;
+  }
+  let lastDay = '';
+  const html = list.map(m=>{
+    const day = fmtDate(m.time);
+    let sep = '';
+    if(day && day!==lastDay){ lastDay=day; sep = `<div class="daysep"><span>${day}</span></div>`; }
+    const who = memberOf(m.source);
+    const mine = m.source==='boss';
+    /* ⭐ 2026-10-06 加：**系统发的**单独一条路（老大：「系统信息统一改成像微信那样子单独的一个框，
+       不要系统是一个头像发出来的东西」）—— 居中一条灰字小框，**不带头像、不带名字、不带气泡**。
+       ⚠️ 万一它带了卡片（正常不该有：那四种卡片都是成员发的），卡片留在框下面，别丢信息。 */
+    if (m.source === 'system') {
+      const c0 = cardOf(m);
+      const card0 = c0 ? `<div class="card"><div class="h"><span class="st s-${c0.st}">${stateText(c0.st)}</span>${c0.h}</div><div class="kv">${linkify(c0.kv).replace(/\n/g,'<br>')}</div></div>` : '';
+      const line = bodyOf(m) || typeText(m) || '（系统消息）';
+      return sep + `<div class="sysline"><span class="sysbox">${linkify(line)}</span>${card0}</div>`;
+    }
+    const meta = typeText(m) + (Array.isArray(m.to)&&m.to.length? ' → '+m.to.map(id=>nm2(memberOf(id))).join('、') : '') + ' · ' + fmtTime(m.time);
+    let txt = bodyOf(m);
+    let card='';
+    const c = cardOf(m);
+    if(c){ card = `<div class="card"><div class="h"><span class="st s-${c.st}">${stateText(c.st)}</span>${c.h}</div><div class="kv">${linkify(c.kv).replace(/\n/g,'<br>')}</div></div>`; }
+    return sep + `<div class="row ${mine?'mine':''}">
+      ${avaHtml(who, false, true)}
+      <div class="body">
+        <div class="who">${nm2(who)} · ${meta}</div>
+        <div class="bub">${linkify(txt)}${card}</div>
+      </div></div>`;
+  }).join('');
+  /* ⭐ 2026-10-06：**内容没变就不动 DOM** —— 同 `renderMembers`：每 5 秒无条件重画会把 hover 之类的
+     DOM 状态冲掉（看着像一闪），消息多时还白费重排。先比内容，一样就跳过。 */
+  if (html !== chatCache){ chatCache = html; if (box0) box0.innerHTML = html; }
+  /* ⭐⭐ 2026-10-05 修：**贴底才跟着走** —— 他本来在最底下（离底 < 40px）⇒ 新消息来了自动滚到最新；
+     他正在往上翻 ⇒ **保持他看的位置**（原来无条件拉到底，翻历史每 5 秒被打断一次）。 */
+  if (box0) box0.scrollTop = stickBottom ? box0.scrollHeight : prevTop;
+}
+
+/* ---- 右栏：任务板 ---- */
+/* 日志事件名：2026-10-03 日志统一后，event 只剩 7 个固定词（reject/cancel/kick/dispatcher-dead/over/state/retry），
+   原事件名（timeout / assign-retry / max-rounds…）搬进了 extra.event ⇒ 统一"原名优先"取 */
+function evName(l){ return (l && l.extra && l.extra.event) ? l.extra.event : ((l && l.event) || ''); }
+/* ⭐ 2026-10-05：`timeout` 这一支底下其实是**两件事**，判据跟后端 `bridge.js` 同一口径 —— 只认结构化字段
+   `extra.kind`（**别去匹配 `why` 里的中英文字**，那句话以后还会改）：
+     ① **真·时限超过**（到点没交）⇒ 日志**不带** `extra.kind`，原文就是「时限超过」；
+     ② **派发后 5 分钟没表态**（`timeout.js` 的 `sweepPendingAck`）⇒ `extra.kind === 'assign-ack'`，
+        日志原文长成「时限超过（assign-ack）」—— 英文括号 ＋ 把②也说成时限超过（把人指去查时限，与事实不符）。
+   ⇒ 这里只把②换成一句人话；**其余条目一律照原样返回**（没带 kind 的、别的事件名，一个字都不动）。
+   文案跟后端「待处理」那条同一口径（`bridge.js` 的 `isAckTimeout` 分支），只是不重复带子任务号（界面已单独列了）。 */
+function humanWhy(l){
+  /* ⭐ 2026-10-06 改口径（老大：「系统通知这一类改成通俗正式一点、不要有你我他」）——
+     原来这句是「派发后一直没表态（5 分钟没接）⇒ 已停、换人」：口语 + 箭头符号。
+     现在写成一句完整、**无主语**的书面话（系统在陈述事实，不该有语气）。 */
+  if (l && l.extra && l.extra.kind === 'assign-ack') return '派发后 5 分钟无回应，已停止并改派';
+  return (l && l.why) || '';
+}
+/* 任务板每条任务下面那几行告警（超时／判挂／换人重派／打回满轮）：全是**系统自己干的事**，
+   ⭐ 2026-10-05：统一挂「系统信息」标记 —— 跟"谁说的话"分开。 */
+function warnRowsFor(t, ds){
+  const logs = LOGS[ds || todayStamp()] || [];
+  const evs = logs.filter(l => (l.subId && String(l.subId).startsWith(t.id)) && ['timeout','refuse-dead-notify','refuse-dead-cancelled','assign-retry','max-rounds'].includes(evName(l)));
+  return evs.slice(-3).map(l=>{
+    const tm = (l.time||'').length>=19 ? l.time.slice(11,16) : '';
+    /* ⭐ 2026-10-06 改口径：这四句是**前端兜底**文案（后端日志没给 `why` 时才用）——
+       去掉口语和"老大"这类称呼，统一写成客观句式。 */
+    const why = humanWhy(l) || (evName(l)==='timeout'?'超时，任务已改派': evName(l)==='refuse-dead-notify'?'执行者无法完成，且派发者未回应': evName(l)==='refuse-dead-cancelled'?'已由派发者确认取消': evName(l)==='assign-retry'?'已改派其他成员':'');
+    // ⭐ 2026-10-05 修（安全）：日志里的 `why` 是**成员能间接塞东西进去的**（例：发一条注定被拒的消息，
+    //    拒收理由里带着它填的收件人名 ⇒ 原样落进日志）⇒ 拼进 HTML 前**必须转义**。
+    return `<div class="l3"><span class="sysmark">系统信息</span>⚠️ ${esc(tm)} ${esc(l.subId||'')} ${esc(why)}</div>`;
+  }).join('');
+}
+/* 点开/收起一件任务的详情。展开状态记在 openTask 里，不能只 toggle DOM 的 class：
+   loadAll 每 5 秒重渲染一次，class 会被 innerHTML 重建冲掉，
+   表现就是「详情显示一会儿自己关了」。 */
+function toggleTask(id){
+  openTask = (openTask === id) ? null : id;
+  renderBoard();
+}
+/* ⭐ 2026-10-06 加：任务板**收起／展开**（老大：「任务板改成默认收着，点了才展开」）。
+   状态记在 localStorage（跟主题一个套路）⇒ 下次打开照旧。开屏的应用见文件末尾初始化处。 */
+/* ⭐ 2026-10-06 加：左下角「菜单」的开关（老大：「加一个菜单按钮在左下角」）。
+   点按钮开/关；点里面任一项由那一项自己调 `closeMenu()` 收起来。 */
+function toggleMenu(){
+  const el = document.getElementById('menuPop');
+  if (el) el.classList.toggle('on');
+}
+function closeMenu(){
+  const el = document.getElementById('menuPop');
+  if (el) el.classList.remove('on');
+}
+function toggleBoard(){
+  const el = document.getElementById('colRight');
+  if (!el) return;
+  el.classList.toggle('collapsed');
+  try{ localStorage.setItem('office.boardOpen', el.classList.contains('collapsed') ? '0' : '1'); }catch(e){}
+  /* ⭐ 2026-10-06：展开时**手动重播**一次滑入动画。
+     原来指望 CSS 靠 `.collapsed` 类切换去触发 —— 同一帧里 `display` 从 `none` 变可见，动画不一定播得起来
+     （老大实测：「没动效，突然冒出来」）。`void b.offsetWidth` 是"强制重排、让动画从头播"的标准写法。 */
+  if (!el.classList.contains('collapsed')){
+    const b = el.querySelector('.rbody');
+    if (b){
+      b.classList.remove('rbody-in');
+      void b.offsetWidth;                    /* 强制重排 ⇒ 动画从头开始 */
+      b.classList.add('rbody-in');
+      b.addEventListener('animationend', function once(){
+        b.classList.remove('rbody-in');
+        b.removeEventListener('animationend', once);
+      });
+    }
+  }
+}
+/* ---- 左栏宽度可拖（2026-10-06 老大：「成员卡的那一条栏改成我鼠标放在那条线上面能调宽窄」）----
+   抓的是左栏右边缘那个 7px 透明把手 `.lgrip`（压在"那条线"两侧，鼠标放上去变左右箭头）。
+   ⚠️ 拖完存 localStorage（跟主题／任务板一个套路），下次打开照旧；
+   ⚠️ 上下限防"拖没了"：左栏最小 150、最大 460（中间那栏 `flex:1` 会跟着让位）。 */
+const LEFT_MIN = 150, LEFT_MAX = 460;
+let leftDragFrom = null;
+function leftColEl(){ return document.querySelector('.col.left'); }
+/** 开屏按记住的宽度应用（文件末尾初始化处调，同 applyBoardState） */
+function applyLeftWidth(){
+  const el = leftColEl(); if (!el) return;
+  try{
+    const w = parseInt(localStorage.getItem('office.leftW') || '', 10);
+    if (w >= LEFT_MIN && w <= LEFT_MAX) el.style.width = w + 'px';
+  }catch(e){}
+}
+function startLeftDrag(e){
+  const el = leftColEl(); if (!el) return;
+  leftDragFrom = { x: e.clientX, w: el.getBoundingClientRect().width };
+  const g = document.getElementById('leftGrip'); if (g) g.classList.add('on');
+  document.body.style.userSelect = 'none';
+  document.body.style.cursor = 'col-resize';
+  e.preventDefault();
+}
+function moveLeftDrag(e){
+  if (!leftDragFrom) return;
+  const el = leftColEl(); if (!el) return;
+  const w = Math.max(LEFT_MIN, Math.min(LEFT_MAX, leftDragFrom.w + (e.clientX - leftDragFrom.x)));
+  el.style.width = w + 'px';
+}
+function endLeftDrag(){
+  if (!leftDragFrom) return;
+  leftDragFrom = null;
+  const g = document.getElementById('leftGrip'); if (g) g.classList.remove('on');
+  document.body.style.userSelect = '';
+  document.body.style.cursor = '';
+  const el = leftColEl();
+  if (el && el.style.width){
+    try{ localStorage.setItem('office.leftW', String(parseInt(el.style.width, 10))); }catch(e){}
+  }
+}
+document.addEventListener('mousemove', moveLeftDrag);
+document.addEventListener('mouseup', endLeftDrag);
+{ const g = document.getElementById('leftGrip'); if (g) g.addEventListener('mousedown', startLeftDrag); }
+
+function applyBoardState(){
+  const el = document.getElementById('colRight');
+  if (!el) return;
+  let open = '0';                      // ⭐ 默认**收着**（老大要求）
+  try{ const v = localStorage.getItem('office.boardOpen'); if (v === '0' || v === '1') open = v; }catch(e){}
+  if (open === '1') el.classList.remove('collapsed'); else el.classList.add('collapsed');
+}
+function renderBoard(){
+  /* ⭐ 2026-10-04 加日期切换（规范 04 §4：按天分类、**当天没有任务就显示"当天无任务"**；
+     验收 M10「切昨天 ⇒ 显示'当天无任务'」）—— 默认落在今天；换哪天靠标题下面那个日期按钮弹层选。 */
+  const ds = boardDate || todayStamp();
+  $('#boardDateBtn').textContent = '📅 ' + dateText(ds) + ' ▾';
+  const arr = TASKS.filter(t=>t.date===ds).sort((x,y)=>(x.closed?1:0)-(y.closed?1:0));
+  if(!arr.length){
+    const empty = `<div class="empty">当天无任务</div>`;
+    if (empty !== renderBoard._cache){ renderBoard._cache = empty; $('#board').innerHTML = empty; }
+    return;
+  }
+  const html = arr.map(t=>{
+      const act = t.subtasks.filter(s=>s.state!=='cancelled');
+      const who = act.map(s=>nm2(memberOf(s.to))).join('、') || '（已全取消）';
+      const doneN = t.subtasks.filter(s=>s.state==='done').length;
+      const maxTimeout = Math.max(0, ...t.subtasks.map(s=>s.timeout||0));
+      const headState = t.closed ? 'done' : (t.subtasks.some(s=>s.state==='working')?'working':'delivered');
+      const headText = t.closed ? '已完' : (t.subtasks.some(s=>s.state==='working')?'干着':'待验');
+      const subs = t.subtasks.map(s=>{
+        const m = memberOf(s.to);
+        /* ⭐ 2026-10-05 加（老大「那加吧」）：**已取消、且是老大自己派的那件**给一个重派入口
+           —— 原来这件在界面上是死路（只能看，不能救）。给不给按钮的判据见 `canReassign()`。 */
+        const re = canReassign(t, s)
+          ? ` <button class="btn" style="padding:2px 8px;font-size:12px" onclick="openReassign('${s.id}')">🔁 换人重派</button>`
+          : '';
+        /* ⭐ 2026-10-06 重排（老大：「主任务点进去的详细页面也得改」）：原来把「状态＋长任务号＋→＋名字
+           ＋备注＋轮次＋按钮」全塞在一行 ⇒ 任务号把行撑爆、「小甲」被挤成竖排、按钮折成两行。
+           现在：第一行＝状态＋名字＋备注＋轮次＋（右侧）按钮；**任务号独占下一行**（小字、等宽）。 */
+        return `<div class="it">
+          <span class="st s-${s.state}">${stateText(s.state)}</span>
+          <b>${nm2(m)}</b>
+          ${s.note ? `<span>${esc(s.note)}</span>` : ''}
+          ${s.rounds ? `<span class="k">跑 ${s.rounds} 轮</span>` : ''}
+          <span class="sp"></span>${re}
+          <span class="sid">${s.id}</span>
+        </div>`;
+      }).join('');
+      // ⭐ 2026-10-05 修（安全）：整行**先拼再转义**（`why` 里可能带成员提供的内容，同 `warnRowsFor`）
+      const logs = (LOGS[ds]||[]).filter(l => (l.taskId===t.id || (l.subId && String(l.subId).startsWith(t.id)))).slice(0,3).map(l=> esc((l.time||'') + '  ' + evName(l) + '  ' + humanWhy(l))).join('<br>');
+      /* ⭐ 2026-10-06 详情区重排：删掉跟卡片**重复**的两行（「主任务 id」＝卡片第二行已有、
+         「内容」＝卡片第一行的标题），「备注」空的就不显示（原来留一个孤零零的"备注："），
+         label 改用网格对齐（`.kv2`）。
+         ⚠️ 这类说明**必须写在模板外面** —— 同一件事我今天已经写进模板里三次，
+            那样它会被当文本插进 DOM（轻则界面上多一坨字，重则反引号截断整段脚本）。 */
+      return `<div class="task ${openTask===t.id?'open':''}" id="tk_${t.id}">
+        <div class="head" onclick="toggleTask('${t.id}')">
+          <div class="l1">
+            <span class="st s-${headState}">${headText}</span>
+            <b class="tt">${esc(t.title)}</b>
+            <span class="caret">▾</span>
+          </div>
+          <div class="l2 tn">${fmtTime(t.id)} · ${t.id}</div>
+          <div class="l2"><span class="k">谁在干</span> ${who} · ${doneN}/${t.subtasks.length} 完成${t.rounds ? ` · 跑 ${t.rounds} 轮` : ''}${maxTimeout?` · 限时 ${maxTimeout} 分钟`:''}</div>
+          ${warnRowsFor(t, ds)}
+        </div>
+        <div class="det">
+          <div class="kv2">
+            <span class="k">派发者</span><span>${nm2(memberOf(t.from))}</span>
+            ${t.note ? `<span class="k">备注</span><span>${esc(t.note)}</span>` : ''}
+          </div>
+          <div class="k" style="margin-top:10px">子任务清单</div>
+          <div class="sub">${subs}</div>
+          <div class="k" style="margin-top:10px">相关日志 · <a class="lk" onclick="openLogs()">在日志里看这一天</a></div>
+          <div class="logbox">${logs||'这天暂无该任务日志'}</div>
+        </div>
+      </div>`;
+  }).join('');
+  /* ⭐ 2026-10-06：同 `renderMembers` —— **内容没变就不重建 DOM**（每 5 秒一次的无条件重画会把
+     hover／展开这类挂在 DOM 上的状态冲掉，看着像闪一下；任务多时还白费重排）。 */
+  if (renderBoard._cache !== html){ renderBoard._cache = html; $('#board').innerHTML = html; }
+}
+
+/* ---- 日志弹层 ---- */
+async function openLogs(){
+  await renderLogBody();
+  $('#maskLog').classList.add('on');
+}
+/* 读并画"选中的那一天"的日志。⭐ 2026-10-04 从 openLogs 里拆出来：选日期弹层里换了一天之后
+   **只该重画内容**，不该把日志弹层整个重开一遍。 */
+async function renderLogBody(){
+  const d = logDate || todayStamp();
+  $('#logDateBtn').textContent = '📅 ' + dateText(d) + ' ▾';
+  try{
+    const r = await callTool('read_log',{date:d});
+    LOGS[d] = r.entries||[];
+    $('#logbody').innerHTML = (LOGS[d]||[]).map(l=>{
+      const tail = [l.taskId, l.subId, l.who].filter(Boolean).join(' ');
+      /* ⭐ 2026-10-05：`why` 走 `humanWhy()` —— 表态超时那条（`extra.kind === 'assign-ack'`）显示人话，
+         别的日志条目照旧显示原文（判据与理由见 `humanWhy` 的注释）。事件名那格（`l.event`）不动。 */
+      const why = humanWhy(l);
+      return `<div class="logline"><span class="t">${esc(l.time||'')}</span><span class="ev">${esc(l.event||'')}</span><span>${esc(why+(tail?' '+tail:''))}</span></div>`;
+    }).join('') || '<div class="empty">这天没有记录</div>';
+  }catch(e){ $('#logbody').innerHTML = '<div class="empty">读日志失败：'+esc(e.message)+'</div>'; }
+}
+
+/* ---- 选日期弹层（任务板和日志共用）---- */
+function openDatePick(forWhom){
+  datePickFor = forWhom;
+  const cur = (forWhom === 'board' ? boardDate : forWhom === 'log' ? logDate : handledDate) || todayStamp();
+  const inp = $('#datePickInput');
+  inp.value = isoDate(cur);
+  /* ⭐ 2026-10-04（老大：「未来不能选直接是灰的」）：日历**上限卡在今天** —— 未来的日子自动变灰、点不了。
+     理由同快捷那三个：明天都还没来，选它只是空看。 */
+  inp.max = isoDate(todayStamp());
+  /* ⭐ 2026-10-04：顺序固定 **前天／昨天／今天**（按时间顺序，今天在最右）；当前选中的那个高亮（默认今天）。
+     ⚠️ 一度做成"昨天／今天／明天"，老大当场否掉：「明天都还没来呢做明天干什么」—— **别做未来的日期**。 */
+  $('#dateQuick').innerHTML = [ dayStampBack(2), dayStampBack(1), dayStampBack(0) ].map(ds=>{
+    return `<button class="btn${ds === cur ? ' pri' : ''}" onclick="pickDate('${ds}')">${dateText(ds)}</button>`;
+  }).join('');
+  $('#maskDate').classList.add('on');
+}
+/* 选定某一天：任务板重画板、日志重读内容 —— ⚠️ 都不重开自己的弹层。 */
+function pickDate(ds){
+  if(!ds || String(ds).length !== 8) return;
+  /* ⚠️ 一道保险：日历的 `max` 只管界面选择器，这里按字符串再比一遍（`YYYYMMDD` 可以直接比大小）——
+     未来的一律不理（老大：「未来不能选直接是灰的」）。 */
+  if(String(ds) > todayStamp()) return;
+  if(datePickFor === 'board'){ boardDate = ds; renderBoard(); }
+  else if(datePickFor === 'log'){ logDate = ds; renderLogBody(); }
+  else { handledDate = ds; renderHandled(); }
+  closeMask('maskDate');
+}
+
+/* ---- 待处理弹层 ---- */
+/* ⭐ 2026-10-04 加（老大：「点过关闭就算看过、当天不再显示」）：**告知类**（不是 `refuse-dead` 那种要点
+   「我知道了」的）**点过关闭就算看过**。⚠️ 只记在本地（`localStorage`，键里带日期 ⇒ **跨天自动作废**）；
+   ⚠️ `refuse-dead` **永远算没看过**（它必须点按钮才消）。 */
+function alertKey(a){ return [a.kind||'', a.subId||a.taskId||'', a.time||''].join('|'); }
+function seenAlertKeys(){
+  try{
+    const raw = JSON.parse(localStorage.getItem('office.alertsSeen') || 'null');
+    if(!raw || raw.day !== todayStamp()) return new Set();   // 换天 ⇒ 旧的"看过的"作废
+    return new Set(raw.keys || []);
+  }catch(e){ return new Set(); }
+}
+/** 还没看过、该显示的那些（`refuse-dead` 永远在内） */
+function unreadAlerts(){
+  const seen = seenAlertKeys();
+  return ALERTS.filter(a => a.kind === 'refuse-dead' || !seen.has(alertKey(a)));
+}
+/** 重算顶上那个红数字 */
+function refreshAlertBadge(){
+  const n = unreadAlerts().length;
+  $('#alertN').textContent = n;
+  $('#alertN').style.display = n ? '' : 'none';
+}
+/** 本次开窗有没有看过「待处理」页 —— 决定关窗时要不要把告知类标成"看过" */
+let noticeSawAlerts = false;
+/** 关「通知」弹层：**只有这次看过「待处理」页**才把告知类标成看过了（只翻历史不该清未读）；再关、再刷数字 */
+function closeNotice(){
+  if (noticeSawAlerts){
+    try{
+      const keys = unreadAlerts().filter(a => a.kind !== 'refuse-dead').map(alertKey);
+      const old = seenAlertKeys();
+      localStorage.setItem('office.alertsSeen', JSON.stringify({ day: todayStamp(), keys: [...new Set([...old, ...keys])] }));
+    }catch(e){ /* 存不了就算了，顶多下次还显示 */ }
+  }
+  noticeSawAlerts = false;
+  closeMask('maskNotice');
+  refreshAlertBadge();
+}
+/** 开「通知」弹层并落到某一页：`'alert'`＝待处理（默认）／`'handled'`＝已处理 */
+async function openNotice(tab){
+  closeMenu();                       /* 左下角那个菜单弹层先收起来（别压着通知按钮） */
+  noticeSawAlerts = false;
+  $('#maskNotice').classList.add('on');
+  await noticeTab(tab === 'handled' ? 'handled' : 'alert');
+  refreshAlertBadge();
+}
+/** 切「通知」里两个页签；切到「待处理」＝现渲染一遍 */
+async function noticeTab(which){
+  const isAlert = which !== 'handled';
+  $('#ntTabA').classList.toggle('on', isAlert);
+  $('#ntTabH').classList.toggle('on', !isAlert);
+  $('#noticePaneA').style.display = isAlert ? '' : 'none';
+  $('#noticePaneH').style.display = isAlert ? 'none' : '';
+  if (isAlert){ renderAlerts(); noticeSawAlerts = true; }
+  else { await renderHandled(); }
+}
+/** 画「待处理」那一页（原来 `openAlerts()` 的渲染块，原样搬进来） */
+function renderAlerts(){
+  $('#alertbody').innerHTML = unreadAlerts().map(a=>{
+    /* ⭐ 2026-10-04 修：**告知类只显示后端给的那句 `text`**。
+       原来正文被写死成「子任务 … 超时 ⇒ 系统标 cancelled ⇒ 派发者已换人重派」，
+       而**判挂**（`kind: 'dispatcher-dead'`）和「系统代收」（`orphan-collected`）也落在这一支
+       ⇒ 界面上把判挂显示成了「超时、换人重派」，跟事实三处不符（2026-10-04 实测撞到）。
+       ⭐ 后端 `pending_alerts` 已经**按 kind 各写好了 `text`**（`bridge.js` 第 1236-1240 行），照显示就对。 */
+    if(a.kind==='refuse-dead'){
+      return `<div class="alertbox warn"><div class="t"><span class="sysmark">系统信息</span>⚠️ 派发者未回应（执行者：${nm2(memberOf(a.to))}）</div>
+        <div style="white-space:pre-wrap;line-height:1.75">执行者 ${nm2(memberOf(a.to))} 无法完成此子任务，且派发者在 5 分钟内未作回应，任务已停止。\n\n主任务：${esc(a.taskId)}\n子任务：${esc(a.subId)}\n内容：${esc(a.subNote||a.taskTitle||'')}\n\n（确认后：该子任务将被取消，执行者转为空闲，后续操作等待派发者决定）</div>
+        <div class="act"><button class="btn pri" onclick="ackDead('${a.subId}')">我知道了</button></div></div>`;
+    }
+    const when = a.time ? ('在 ' + String(a.time).slice(11,16)) : '';
+    /* ⭐ 2026-10-05：待处理里这些**全是系统自己发起的**（判挂／超时／代收）⇒ 统一挂「系统信息」标记 */
+    /* ⭐ 2026-10-05 修：**没有子任务号的那一类，这一段就别写**。
+       「系统代收」(`kind: 'orphan-collected'`) 是**主任务级**的收口 —— 它本来就没有子任务号
+       （后端 `pending_alerts` 如实不给，`subId` 是空的）⇒ 照原样渲染出来是「子任务  在 01:54」，
+       "子任务"后面空一块、看着像界面坏了。判据很简单：**有才写**。
+       ⚠️ 只改这一处渲染；后端那个字段是真值（别的告警类型还带着 subId），不动它。 */
+    const subLine = a.subId ? ('子任务 ' + esc(a.subId) + ' ') : '';
+    /* ⭐ 2026-10-05 加（老大「那加吧」）：告知类里这条若**是老大自己派的任务、且那件已被取消**
+       ⇒ 顺手挂一个重派入口（省得他看完这条再去任务板翻）。给不给按钮的判据同 `canReassign()`。 */
+    const tk0 = a.taskId ? TASKS.find(x => x.id === a.taskId) : null;
+    const ts0 = (tk0 && a.subId) ? (tk0.subtasks||[]).find(y => y.id === a.subId) : null;
+    const reAct = (ts0 && canReassign(tk0, ts0))
+      ? `<div class="act"><button class="btn pri" onclick="openReassign('${a.subId}')">🔁 换人重派</button></div>`
+      : '';
+    return `<div class="alertbox"><div class="t"><span class="sysmark">系统信息</span>ℹ️ ${esc(a.text||'系统告知')}</div><div style="white-space:pre-wrap;line-height:1.75">${subLine}${when}\n\n（此提示仅作告知，不影响后续操作）</div>${reAct}</div>`;
+  }).join('') || (()=>{
+    /* ⭐ 2026-10-05 加（老大：「你要加就只能显示今天的」）：空的时候**要说清是哪种空** ——
+       「被今天的『已看过』标记挡住」（东西还在，去「🗂 已处理」翻）vs「真没有」。
+       ⚠️ **只数今天的**：`seenAlertKeys()` 本身就是**按天作废**的（换天返回空集），
+          所以这里天然只统计今天看过的条数，**不会把以前各天累加进来**。 */
+    const seenNow = seenAlertKeys();
+    const hiddenN = ALERTS.filter(a => a.kind !== 'refuse-dead' && seenNow.has(alertKey(a))).length;
+    return '<div class="empty">没有待处理'
+      + (hiddenN ? `<br><span style="opacity:.75">另有 ${hiddenN} 条今天已看过 → 点上面「🗂 已处理」翻</span>` : '')
+      + '</div>';
+  })();
+  refreshAlertBadge();
+}
+async function ackDead(subId){
+  try{
+    await callTool('ack_refuse_dead',{subId});
+    tips('已确认，那件取消、执行者空闲');
+    closeNotice();
+    loadAll();
+  }catch(e){ tips('确认失败：'+e.message); }
+}
+
+/* ---- 换人重派弹层（正本：规范 `时限\01-异常与重新派发.md` §一「重派：必须换人」）----
+   ⭐ 2026-10-05 加（老大：「那加吧」）：后端 `reassign` 工具早就在，**界面上一直没有入口**
+   ⇒ 「待处理」里那句"往后全等你发话"是句空话（老大自己派的活出了异常，没地方换人）。
+   ⚠️ **只给"老大自己派的任务"按钮**（`task.from === 'boss'`）：后端 `timeout.js` 的 `assignRetry()`
+     有一道校验 —— `opts.by !== 派发者 ⇒ 拒`。AI 派的任务由它自己换人（自动、不必等老大发话）；
+     老大替它按会被后端拒 ⇒ 那种任务**不给按钮**（给了也是按不动、白挨一句拒）。
+   ⚠️ 挑人口径必须与后端 `triedList()` 同一套：**有 `tried` 用 `tried`，没有就是"当前这位"**
+     —— 两边算法不一致，就会挑出被后端以"重派必须换人"拒掉的人。 */
+let reassignSub = '';
+/** 给不给按钮的粗筛（真判据在后端；这里只保证"按下去不会必被拒"）
+ *  ⚠️ **为什么只认 `cancelled`**（2026-10-05 定，**有意为之、不是漏做**）：
+ *    · 只有"系统已经判了、就等着换人"的件才给按钮 ⇒ **不会让老大把正干得好好的活误换掉**；
+ *    · 代价：「执行者干不了」那一刻那件**还没 cancelled**（`timeout.js` 的 `onRefuse` 只通知派发者、
+ *      等 5 分钟窗口，收场时才 `setSubtaskState(…, CANCELLED)`）⇒ **那种情形要等窗口走完**按钮才出现。
+ *    · 宁严勿宽：漏一个入口，老大只是多等一会儿；放宽了误点，换掉的是**正在干的活**。 */
+function canReassign(t, s){
+  if (!t || !s) return false;
+  if (t.from !== 'boss') return false;      /* 不是老大派的 ⇒ 后端必拒"只能派发者本人发起" */
+  if (t.closed) return false;               /* 已收口的主任务不再动它 */
+  return s.state === 'cancelled';           /* 重派只补"没完成的那份"（done 的不重发） */
+}
+/** 这件试过谁（与后端 `triedList()` 同口径） */
+function triedOf(s){ return (Array.isArray(s.tried) && s.tried.length) ? s.tried.slice() : [s.to]; }
+function openReassign(subId){
+  let t = null, s = null;
+  for (const x of TASKS){
+    const y = (x.subtasks||[]).find(z => z.id === subId);
+    if (y){ t = x; s = y; break; }
+  }
+  if (!t || !s){ tips('找不到这件子任务'); return; }
+  if (!canReassign(t, s)){ tips('这件不能重派（仅对本人派发、且已取消的子任务开放）'); return; }
+  reassignSub = subId;
+  const tried = triedOf(s);
+  const cands = MEMBERS.filter(m => m.id !== 'boss' && !tried.includes(m.id));
+  /* 每人标一句"在不在线／忙不忙" —— 后端 `canAssign` 还会拦一道（不在线／忙／手上压着待验收的），
+     标出来只是让老大**别去挑一个明知会被拒的人**；能不能派最终由后端说了算。 */
+  const rows = cands.map(m=>{
+    const ok  = m.presence !== 'offline' && m.busy !== 'busy';
+    const why = m.presence === 'offline' ? '离线（后端会拒）' : (m.busy === 'busy' ? '忙（后端会拒）' : '在线 · 空闲');
+    return `<div class="it" style="display:flex;align-items:center;gap:8px;margin:6px 0">
+      <span>${nm2(m)}</span><span class="k" style="opacity:.7">${esc(why)}</span>
+      <button class="btn${ok?' pri':''}" style="margin-left:auto;padding:3px 10px;font-size:12px" onclick="doReassign('${subId}','${m.id}')">派给他</button></div>`;
+  }).join('') || '<div class="empty">没别人可换了</div>';
+  $('#reassignBody').innerHTML = `
+    <div class="setsub" style="margin-bottom:8px">把 <b>${esc(subId)}</b> 换个人重做。</div>
+    <div class="alertbox"><div class="t"><span class="sysmark">要重派的那件</span>⚠️ 原执行者：${nm2(memberOf(s.to))}</div>
+      <div style="white-space:pre-wrap;line-height:1.75">主任务：${esc(t.id)}\n内容：${esc(t.title||'')}\n这件的要求：${esc(s.note||'（没写）')}\n已经试过：${tried.map(id=>nm2(memberOf(id))).join('、')}</div></div>
+    <div class="setsub" style="margin:10px 0 4px">换给谁（不会再派回试过的人）：</div>
+    ${rows}
+    <div class="setsub" style="margin:12px 0 4px">或者：</div>
+    <div class="it" style="display:flex;align-items:center;gap:8px">
+      <span>我自己来</span><span class="k" style="opacity:.7">系统只记一笔"派发者自己干"，不进任务表、不计时</span>
+      <button class="btn" style="margin-left:auto;padding:3px 10px;font-size:12px" onclick="doReassign('${subId}','boss')">我自己来</button></div>
+    <div class="setsub" style="margin-top:10px;opacity:.7">时限与要求默认照旧件（后端默认继承）。</div>`;
+  $('#maskReassign').classList.add('on');
+}
+async function doReassign(subId, to){
+  const bs = document.querySelectorAll('#reassignBody button');
+  bs.forEach(b => { b.disabled = true; });   /* 防连点：重派是写表的动作 */
+  try{
+    const r = await callTool('reassign', { subId, to });
+    tips(r && r.selfDo ? '无人可改派，已记为「派发者自行处理」（不进任务表）' : '已改派其他成员，新执行者已收到派活');
+    closeMask('maskReassign');
+    loadAll();
+  }catch(e){
+    tips('重派失败：' + e.message);
+    bs.forEach(b => { b.disabled = false; });
+  }
+}
+
+/* ---- 已处理（告警历史）弹层：规范 `04-功能清单` §7.8 ----
+   跟「待处理」的分工：那个＝**当下还没消化**的（`refuse-dead` 必须点按钮才消）；
+   这个＝**同一批条目的历史**，数据源是**后端日志**（⇒ 换浏览器、清缓存都不丢），按日期翻（未来不可选）。
+   ⚠️ **只读** —— 它不提供确认／重派，要动作回「待处理」。 */
+/* ⚠️ 「已处理」原来有个自己的入口 `openHandled()`（2026-10-05 加）—— 2026-10-06 并进「🔔 通知」的页签了，
+   现在开它＝ `openNotice('handled')`（走 `noticeTab('handled')`）。那句老叮嘱仍然成立：
+   **翻历史绝不能顺手把「待处理」清空** ⇒ 清未读只看 `noticeSawAlerts`（这次真看过「待处理」页没有）。 */
+async function renderHandled(){
+  const d = handledDate || todayStamp();
+  $('#handledDateBtn').textContent = '📅 ' + dateText(d) + ' ▾';
+  const body = $('#handledbody');
+  body.innerHTML = '<div class="empty">读取中…</div>';
+  try{
+    const r = await callTool('read_alerts', { date: d });
+    const list = (r && r.alerts) || [];
+    body.innerHTML = list.length
+      ? list.map(a=>{
+          const who = a.to ? (' · ' + esc(nameFull(memberOf(a.to)))) : '';
+          const sub = a.subId ? ('子任务 ' + esc(a.subId) + ' ') : '';
+          return `<div class="alertbox"><div class="t"><span class="sysmark">系统信息</span>ℹ️ ${esc(a.text||'')}</div>`
+            + `<div style="white-space:pre-wrap;line-height:1.75">${sub}${esc(a.time||'')}${who}</div></div>`;
+        }).join('')
+      : '<div class="empty">这一天没有已处理的提示</div>';
+  }catch(e){
+    body.innerHTML = `<div class="empty">读取失败：${esc(e.message||String(e))}</div>`;
+  }
+}
+function closeMask(id){ $('#'+id).classList.remove('on'); }
+/* ⭐ 2026-10-06 加（老大：「交互逻辑啥的也改改」）—— 弹层补两个**通用**的关闭方式：
+   ① **Esc** 关掉最上面那一个（后开的先关；`maskDate` 常叠在别的弹层上，所以取 DOM 里最后一个 `.on`）；
+   ② **点遮罩空白处**关掉（省得每次都去够右上角那个 ✕）。
+   ⚠️ 通知弹层／成员窗必须走各自的关法（一个负责把"告知类"标成看过了、一个负责把 `cur` 归位），
+      直接 `closeMask` 会让状态错位。 */
+function closeTopMask(){
+  const opens = [...document.querySelectorAll('.mask.on')];
+  if (!opens.length) return false;
+  /* ⭐ 2026-10-06 修（连带）：按 **z-index** 找最上面那个 —— 原来按 DOM 顺序取最后一个，
+     「选日期」提了层级（它 DOM 在前、层级最高）之后那套就不准了：Esc 会把下面的通知关掉、留下日期窗。 */
+  const z = el => parseInt(getComputedStyle(el).zIndex, 10) || 0;
+  const top = opens.reduce((a, b) => (z(b) >= z(a) ? b : a));
+  const id = top.id;
+  if (id === 'maskNotice') closeNotice();
+  else if (id === 'maskMember') closeMember();
+  else closeMask(id);
+  return true;
+}
+document.addEventListener('keydown', function(e){
+  if (e.key !== 'Escape') return;
+  /* ⚠️ 输入框里的 Esc 归 `onMsgKey` 管（关 `@` 候选表）⇒ 这里不抢。 */
+  const t = e.target;
+  if (t && t.id === 'input') return;
+  if (closeTopMask()) e.preventDefault();
+});
+document.querySelectorAll('.mask').forEach(function(m){
+  /* ⭐ 2026-10-06 修：用 `mousedown` 而不是 `click` ——
+     `click` 的 target 是"按下点"和"松开点"的**共同祖先**：在遮罩上按住、拖进弹层再松手，
+     target 依然算遮罩 ⇒ **会误关**。按下即判定就没这个问题。 */
+  m.addEventListener('mousedown', function(e){
+    if (e.target !== m) return;      /* 只有点在遮罩本身（不是弹层内容）才算 */
+    closeTopMask();
+  });
+});
+/* 打开文件夹：走 后端的 open_folder（2026-10-03 改）
+   ⚠️ 老写法是把路径写进网页标题让壳轮询 —— 那条通道不通（网页改 document.title 不会改 WinForms 窗体标题），
+      所以「我的文件夹」按钮以前根本打不开。现在由后端直接调 explorer。 */
+async function openFolder(p){
+  const path = (p||'').trim(); if(!path) return;
+  try{ const d = await callTool('open_folder',{path}); tips('已打开：'+((d&&d.opened)||path)); }
+  catch(e){ tips('打开失败：'+e.message); }
+}
+async function openInbox(){
+  if(!inboxPath){ try{ const d = await callTool('inbox_path',{}); inboxPath = d.path||''; }catch(e){} }
+  if(inboxPath) openFolder(inboxPath); else tips('尚未设置文件夹');
+}
+/* ---- 调试模式（2026-10-04 加：设置面板里那个开关；规范 `04-功能清单` §7.7）---- */
+/**
+ * 读后端状态里的 `debug`，据此：① 显示/藏起顶上那条红字标记 ② 同步设置面板里两个按钮的选中态
+ * ③ 在设置面板里写一句人话说明现在是什么状态。⚠️ 走 `GET /api/state`（只读、不经那道门）。
+ */
+async function refreshDebugBadge(){
+  try{
+    const r = await fetch('http://127.0.0.1:8787/api/state').then(x=>x.json());
+    const on = !!(r && r.state && r.state.debug);
+    const badge = $('#debugBadge');
+    if(badge) badge.style.display = on ? '' : 'none';
+    // ⭐ 2026-10-05 改（老大：「没走插件这个说法也该改了叫非法接入，提示再加一个拒绝接入，分开来」）：
+    //    原来三类混成一个数（"今天 35 次接入没走插件"）—— 其中 34 次**恰恰是插件自己**在重试被拒，
+    //    说成"没走插件"跟事实正好相反。现在拆成两个标记：
+    //      · 非法接入（`unverified`）＝ 没带手续／手续不对就来接
+    //      · 拒绝接入（`refused`）＝ 调用被门拒（含"连着但手续不对、反复重试"那种）
+    //    数据源不变（`bridge.js` 的 `accessFeed`，三个数本来就分着返回）；探活没通（`probeFail`）留在悬停明细。
+    const acc = r && r.state && r.state.access;
+    const accDetail = (acc && acc.count > 0)
+      ? ('（这次统计：没带手续／手续不对 ' + (acc.unverified || 0) + ' 次 ｜ 被拒 ' + (acc.refused || 0)
+         + ' 次 ｜ 探任务没通 ' + (acc.probeFail || 0) + ' 次）这些都记在日志里，'
+         + '可以点「🗂 已处理」或「📋 日志」翻。')
+      : '';
+    const ab = $('#accessBadge');
+    if(ab){
+      if(acc && acc.unverified > 0){
+        ab.textContent = '⚠️ 今天 ' + acc.unverified + ' 次非法接入';
+        ab.title = '没带手续／手续不对就来接的。' + accDetail;
+        ab.style.display = '';
+      } else {
+        ab.style.display = 'none';
+      }
+    }
+    const rb = $('#refusedBadge');
+    if(rb){
+      if(acc && acc.refused > 0){
+        rb.textContent = '🚫 今天 ' + acc.refused + ' 次拒绝接入';
+        rb.title = '调用被门拒了（含着但手续不对、反复重试那种）。' + accDetail;
+        rb.style.display = '';
+      } else {
+        rb.style.display = 'none';
+      }
+    }
+    const bOn = $('#segDebugOn'), bOff = $('#segDebugOff');
+    if(bOn && bOff){
+      bOn.className = 'btn' + (on ? ' pri' : '');
+      bOff.className = 'btn' + (on ? '' : ' pri');
+    }
+    const h = $('#debugHint');
+    /* ⭐ 2026-10-06 改口径（老大：「那道门呢什么挂红字提醒啊，这种太口语化了，要改掉」）——
+       去掉"那道门／挂红字提醒／口子"这类随手说法，改成正经表述。 */
+    if(h) h.innerHTML = on
+      ? '⚠️ <b>当前状态：已开启</b>。该项校验已被跳过，任何成员都能调用工具。每次放行都会记入日志；<b>30 分钟无操作将自动关闭</b>，使用后请及时关闭。'
+      : '<b>当前状态：已关闭</b>（正常）。未连接的成员无法调用工具。';
+  }catch(e){ /* 读不到就算了，顶多标记不显示 —— 不拦界面 */ }
+}
+/** 开／关调试模式（⚠️ 只有 boss 能开：后端会拒别人，界面上不额外挡，让后端说了算） */
+async function setDebug(on){
+  try{
+    await callTool('set_debug', { memberId: 'boss', on });
+    tips(on ? '调试模式已开启，校验已跳过' : '调试模式已关闭');
+    await refreshDebugBadge();
+  }catch(e){
+    tips('修改失败：' + ((e && e.message) || e));
+  }
+}
+
+/* 设置面板（2026-10-03 加：老大要一个设置按钮，装「主题」＋「我的文件夹」两样） */
+async function openSettings(){
+  $('#maskSet').classList.add('on');
+  refreshDebugBadge();   /* ⭐ 顺手同步一次调试模式的按钮选中态（2026-10-04 加） */
+  paintThemeSeg();
+  fillMyFolder();
+}
+/** 把「我的文件夹」那块的输入框和提示按当前值填好 */
+async function fillMyFolder(){
+  const i = $('#myPathInput'), h = $('#myPathHint');
+  try{
+    const d = await callTool('inbox_path',{});
+    inboxPath = (d&&d.path)||inboxPath||''; inboxCustom = !!(d&&d.isCustom);
+  }catch(e){ /* 读不到就用本地那份 */ }
+  if(i) i.value = inboxCustom ? inboxPath : '';
+  if(h) h.textContent = inboxCustom ? ('现在指向（自定义）：'+inboxPath) : ('现在指向（默认）：'+inboxPath);
+}
+/** ⭐ 2026-10-04 加（规范 `04` §7.4「路径能手填、也能挑」）：弹系统的「选择文件夹」窗口挑个目录。
+    ⚠️ **选完只填进输入框、不自动保存** —— 跟手填走同一个「保存」口（选错了还能改）。 */
+async function browseFolder(){
+  try{
+    const d = await callTool('pick_folder', { title: '选一个文件夹当「我的文件夹」' });
+    if(!d || d.canceled){ tips('未选择'); return; }
+    const i = $('#myPathInput');
+    if(i) i.value = d.path || '';
+    tips('已选择。点击「保存」后生效');
+  }catch(e){ tips('打开选择窗口失败：'+e.message); }
+}
+async function saveMyFolder(){
+  const p = (($('#myPathInput')||{}).value||'').trim();
+  if(!p){ resetMyFolder(); return; }        // 清空保存 ＝ 恢复默认
+  try{
+    const d = await callTool('set_my_folder',{path:p});
+    inboxPath = (d&&d.path)||p; inboxCustom = true;
+    tips('已改成：'+inboxPath);
+    fillMyFolder();
+  }catch(e){ tips('修改失败：'+e.message); }
+}
+async function resetMyFolder(){
+  try{
+    await callTool('set_my_folder',{path:''});
+    const d = await callTool('inbox_path',{});
+    inboxPath = (d&&d.path)||''; inboxCustom = false;
+    tips('已恢复默认：'+inboxPath);
+    fillMyFolder();
+  }catch(e){ tips('恢复失败：'+e.message); }
+}
+/* 主题：在设置面板里选（2026-10-03 改：原来顶部有个独立按钮，现在收进设置） */
+function setTheme(t){
+  document.documentElement.dataset.theme = (t==='dark'?'dark':'light');
+  try{ localStorage.setItem('office.theme', document.documentElement.dataset.theme) }catch(e){}   /* 记住：关掉重开还是这个色 */
+  paintThemeSeg();
+}
+/** 两个主题按钮谁亮着 */
+function paintThemeSeg(){
+  const t = document.documentElement.dataset.theme==='dark' ? 'dark' : 'light';
+  const L = $('#segLight'), D = $('#segDark');
+  if(L) L.classList.toggle('on', t==='light');
+  if(D) D.classList.toggle('on', t==='dark');
+}
+/* ══════════ 2026-10-04 加：输入区（规范 04 §7.6 老大定）══════════
+   一个开关、两副面孔：【💬 消息】（默认）／【📋 任务】。
+   ✅ 消息态：**不打 @ ⇒ 自动 @all**（老大是唯一能 @all 的人；AI 不 @ 就谁也不叫）；
+              **打 @ ⇒ 弹引用表点人**，点完就是一个 @谁。
+   ✅ 任务态：就是 AI 那张派发表（接入\03 §1.1），只是长成人话 ——
+              主任务号（带 boss- 前缀）／子任务号／信封 id 全部**系统自动填**，他不用管。
+   ⚠️ 老代码这里有个**发不出去的 bug**：构造信封时没给 id／source／specversion，
+      而后端要求 source 必须等于调用者 ⇒ 每次都被拒。这次一并修掉。 */
+
+let mode = 'msg';
+let subs = [{ to:'', note:'', timeout:30, heavy:false }];   /* 任务态的一件件任务 */
+let ASSIGN = [];          /* 可派发名单（后端现算；不在线的人根本不在里头） */
+/* ⚠️ 这两个声明**排在 `loadAll` 定义之后**：`let` 不像 `function` 会提升，
+   将来要是把 `loadAll()` 的调用挪到这一行前面，就会撞上"暂时性死区"报错（整段脚本起不来）。
+   现在最早的调用在本行之后（末尾那次顶层调用），安全。 */
+let connDown = false;     /* 后端的连接是不是断着（配顶栏 `#connBadge`，防 toast 每 5 秒刷） */
+/** 顶栏那条「连不上办公室后端」标记的显隐 */
+function setConnBadge(on){
+  const b = $('#connBadge');
+  if (b) b.style.display = on ? '' : 'none';
+}
+let MAIN_RUNNING = '';    /* 正在跑的主任务 id —— 有它 ⇒ 派发会被拒，当场写给他看 */
+
+function isoNow(){
+  const d = new Date(), p = x => String(x).padStart(2,'0');
+  const off = -d.getTimezoneOffset(), sg = off >= 0 ? '+' : '-';
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}${sg}${p(Math.floor(Math.abs(off)/60))}:${p(Math.abs(off)%60)}`;
+}
+/** ⭐ 2026-10-06：把「消息／任务」那个滑块挪到**当前选中的按钮**下面。
+    切模式、开屏、窗口大小变化时都要叫一次。位置用 `offsetLeft/offsetWidth` 读
+    —— 按钮的 offsetParent 就是 `.modes`（它 position:relative）。 */
+function moveModeSlider(){
+  const box = document.getElementById('modes');
+  const sl  = document.getElementById('mslid');
+  if (!box || !sl) return;
+  const on = box.querySelector('button.on');
+  if (!on) return;
+  sl.style.width = on.offsetWidth + 'px';
+  sl.style.transform = 'translateX(' + on.offsetLeft + 'px)';
+}
+function setMode(m){
+  mode = (m === 'task') ? 'task' : 'msg';
+  const rm = $('#rowMsg'), rt = $('#rowTask');
+  if(rm) rm.style.display = (mode === 'msg')  ? '' : 'none';
+  if(rt) rt.style.display = (mode === 'task') ? '' : 'none';
+  const bm = $('#mMsg'), bt = $('#mTask');
+  if(bm) bm.classList.toggle('on', mode === 'msg');
+  if(bt) bt.classList.toggle('on', mode === 'task');
+  if(mode === 'task'){ renderSubs(); paintTaskHint(); refreshAssign(); }
+  else { closeAt(); paintMsgHint(); }
+  /* ⭐ 2026-10-06：切过去就**把焦点送进该模式的第一个输入框**（消息态＝那个大输入框；任务态＝「这是什么任务」）
+     —— 原来切完还得自己再点一下才能开始打字。 */
+  const focusTo = (mode === 'task') ? $('#tfTitle') : $('#input');
+  if (focusTo && focusTo.focus) { try{ focusTo.focus(); }catch(e){} }
+  /* ⭐ 2026-10-06：最后把滑块挪过去 —— 必须放在类切换**之后**读宽：
+     选中那个按钮加了 `font-weight:600`，宽度会变，滑块得按新宽度算。 */
+  moveModeSlider();
+}
+
+/* —— 消息态 —— */
+function atTargets(){
+  const v = ($('#input') ? $('#input').value : '');
+  /* ⭐ 宿主进程名、昵称都指向同一个人（规范 04 §7.6 老大原话：「@ 这个叫人唤醒的事件让宿主进程名、昵称都指向同一个人」）
+     ⇒ 输入框里写的是哪个名都认；顺手把 id 也认了（手打 id 也能叫到人）。
+     ⭐⭐ 2026-10-05 修：**长的名字先认，认掉的片段挖空** —— 原来是"谁在名单里靠前谁先命中"，
+     两个成员名字互为子串时（例："小甲" 与 "小甲甲"）输入 `@小甲甲` 会**同时**叫到两个人。 */
+  const cands = [];
+  MEMBERS.forEach(m => {
+    if (m.id === 'boss') return;
+    for (const n of [dispName(m), nickOf(m), m.id]) {
+      if (n) cands.push({ name: String(n), id: m.id });
+    }
+  });
+  cands.sort((a, b) => b.name.length - a.name.length);   // 长的先来
+  let rest = v;
+  const ids = [];
+  for (const c of cands) {
+    const token = '@' + c.name;
+    if (!rest.includes(token)) continue;
+    if (!ids.includes(c.id)) ids.push(c.id);
+    rest = rest.split(token).join(' '.repeat(token.length));   // 挖掉，别被更短的名字再吃一遍
+  }
+  return ids;
+}
+function paintMsgHint(){
+  const h = $('#modeHint'); if(!h) return;
+  const v = ($('#input') ? $('#input').value : '').trim();
+  const picked = atTargets();
+  h.className = 'hint';
+  h.textContent = !v ? '不 @ 则发给全体；输入 @ 选择成员'
+    : (picked.length ? ('发给：' + picked.map(id=>nameFull(memberOf(id))).join('、')) : '未指定收件人，将发给全体（@all）');
+}
+function onMsgInput(){ atMode = 'msg'; paintMsgHint(); paintAt(); }   /* 一打字就回到"@ 选人"那张表 */
+function onMsgKey(e){
+  /* ⭐ 2026-10-06 修一个交互缺口（老大：「交互逻辑啥的也改改」）：`@` 候选表**开着**时，Enter 先**选中那一位**。
+     原来 Enter 一律直接发出去 ⇒ 用上下键挑的人白挑了 —— 键盘根本用不了 @ 选人。表没开时 Enter 照旧＝发送。 */
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    const ab = $('#atbox');
+    if(atMode === 'msg' && ab && ab.classList.contains('on') && atList.length){ pickAt(atSel); return; }
+    send(); return;
+  }
+  if(e.key === 'Escape'){ closeAt(); return; }
+  if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ if(moveAt(e.key === 'ArrowDown' ? 1 : -1)) e.preventDefault(); }
+}
+let atSel = 0, atList = [], atMode = 'msg', whoIdx = -1;
+/** 光标前那个 @ 后面打了几个字（没有就返回 null） */
+function atQuery(){
+  const el = $('#input'); if(!el) return null;
+  const upto = el.value.slice(0, el.selectionStart);
+  const i = upto.lastIndexOf('@');
+  if(i < 0) return null;
+  const tail = upto.slice(i + 1);
+  if(/\s/.test(tail)) return null;      /* @ 后面已经有空格了 ⇒ 当他随口打的，不弹 */
+  return tail;
+}
+function paintAt(){
+  const box = $('#atbox'); if(!box) return;
+  /* ⭐ 任务态：点「给谁」弹出的是**同一张表**（规范 04 §7.6），但候选来自**可派发名单**
+     （`list_members` 现算，规范 03 §5），不是全体成员；「不可派」的人**显示、不隐藏**
+     （流程\02：派发者看"只能打回"、别人看"不可派（等验收）"），只是**点不动**。 */
+  if(atMode === 'task'){
+    atList = (ASSIGN || []).slice();
+    if(!atList.length){ tips('名单尚未返回，请稍后重试'); closeAt(); return; }
+    if(atSel >= atList.length) atSel = 0;
+    box.innerHTML = atList.map((x,i)=>{
+      const m = memberOf(x.id) || {id:x.id};
+      const dis = (x.assignable === false);
+      const why = dis ? (x.why || '这会儿不可派') : (x.busy === 'busy' ? (x.why || '忙') : '空闲');
+      return `<div class="it ${i===atSel?'sel':''} ${dis?'off':''}" onclick="${dis ? '' : 'pickWho('+i+')'}">
+        <div class="av" style="background:${dispColor(m)}">${initial(dispName(m))}${iconAttr(m.icon)?`<img src="data:image/png;base64,${iconAttr(m.icon)}" style="position:absolute;inset:0;width:100%;height:100%;border-radius:inherit;object-fit:cover" onerror="this.remove()">`:''}</div>
+        <span>${nm2(m)}</span>
+        <span class="sub">${esc(why)}</span>
+      </div>`;
+    }).join('');
+    box.classList.add('on');
+    return;
+  }
+  const q = atQuery();
+  if(q === null){ closeAt(); return; }
+  atList = MEMBERS.filter(m => m.id !== 'boss')
+    .filter(m => !q || dispName(m).includes(q) || nickOf(m).includes(q) || String(m.id).includes(q));
+  if(!atList.length){ closeAt(); return; }
+  if(atSel >= atList.length) atSel = 0;
+  box.innerHTML = atList.map((m,i)=>`
+    <div class="it ${i===atSel?'sel':''}" onclick="pickAt(${i})">
+      <div class="av" style="background:${dispColor(m)}">${initial(dispName(m))}${iconAttr(m.icon)?`<img src="data:image/png;base64,${iconAttr(m.icon)}" style="position:absolute;inset:0;width:100%;height:100%;border-radius:inherit;object-fit:cover" onerror="this.remove()">`:''}</div>
+      <span>${nm2(m)}</span>
+      <span class="sub">${esc(statusLabel(m))}</span>
+    </div>`).join('');
+  box.classList.add('on');
+}
+/* 任务态：点开某一行的「给谁」（再点一下同一行＝收起）
+   ⭐ 2026-10-05 改（老大：「人没在线，但选人列表里显示在线、还能选上，虽然派不出去」）：
+   原来这里直接 `paintAt()` —— 而 `paintAt` 用的 `ASSIGN` 是**切到任务态那一刻的快照**
+   （全界面只有 `setMode()` 里刷过一次），**人之后离线了名单照样挂着他**，显示"空闲"、还能点。
+   ⇒ 每次点开**现拉一次**：`list_members` 是后端现算的，离线的**根本不进名单**（正本 `流程\02` §5.4）。
+   ⚠️ 「点派发前提示不在线」那一层已经有了，本处只修名单过期这一件。 */
+async function openWho(i){
+  const box = $('#atbox');
+  if(whoIdx === i && box && box.classList.contains('on')){ closeAt(); whoIdx = -1; return; }
+  whoIdx = i; atMode = 'task'; atSel = 0;
+  await refreshAssign();   /* 现拉：名单是活的，人随时可能离线 */
+  paintAt();
+}
+/* 任务态：点中某个候选人 ⇒ 写进那一件任务的 `to`（点哪个名字都是同一个人） */
+function pickWho(i){
+  const x = atList[i];
+  if(!x || x.assignable === false) return;
+  if(whoIdx >= 0 && subs[whoIdx]){ subs[whoIdx].to = x.id; renderSubs(); }
+  whoIdx = -1; closeAt();
+}
+function moveAt(d){
+  const box = $('#atbox');
+  if(!box || !box.classList.contains('on')) return false;
+  atSel = (atSel + d + atList.length) % atList.length;
+  paintAt();
+  return true;
+}
+function pickAt(i){
+  const m = atList[i]; if(!m) return;
+  const el = $('#input');
+  const upto = el.value.slice(0, el.selectionStart);
+  const j = upto.lastIndexOf('@');
+  const before = el.value.slice(0, j);
+  const after = el.value.slice(el.selectionStart);
+  /* ⭐ 插进输入框的是**两个名字**（规范 04 §1：`@` 后面宿主进程名、昵称都显示，形如 `@<宿主进程名> <昵称>`） */
+  const ins = '@' + nameFull(m) + ' ';
+  el.value = before + ins + after;
+  const pos = (before + ins).length;
+  el.setSelectionRange(pos, pos);
+  closeAt(); paintMsgHint(); el.focus();
+}
+function closeAt(){ const b = $('#atbox'); if(b) b.classList.remove('on'); }
+async function send(){
+  const el = $('#input');
+  const v = el ? el.value.trim() : '';
+  if(!v){ tips('请输入内容'); return; }
+  const picked = atTargets();
+  const to = picked.length ? picked : ['@all'];
+  try{
+    await callTool('send_message', { memberId:'boss', envelope:{
+      id: 'ui-msg-' + stampNow() + '-' + Math.random().toString(36).slice(2,6),
+      source: 'boss', specversion: '1.0', type: 'chat.message',
+      to, data:{ text: v }, time: isoNow(),
+    }});
+    /* ⭐ 2026-10-06：发完把焦点送回输入框 —— 如果这一条是点「发送」按钮发的，焦点本来留在按钮上，
+       想接着打下一句还得再点一次输入框。 */
+    el.value = ''; closeAt(); paintMsgHint(); if(el) el.focus();
+    tips(picked.length ? ('已发给：' + picked.map(id=>nameFull(memberOf(id))).join('、')) : '已发给全体');
+    loadAll();
+  }catch(e){ tips('发送失败：' + e.message); }
+}
+
+/* —— 任务态：老大填的派发表（字段跟 AI 那张一样，只是长成人话）—— */
+function escAttr(s){ return esc(s).replace(/"/g, '&quot;'); }
+async function refreshAssign(){
+  try{
+    const d = await callTool('list_members', { byMemberId: 'boss' });
+    ASSIGN = Array.isArray(d) ? d : [];
+  }catch(e){ ASSIGN = []; }
+  if(mode === 'task') renderSubs();
+}
+function renderSubs(){
+  const box = $('#tfSubs'); if(!box) return;
+  box.innerHTML = subs.map((s,i)=>`
+    <div class="subrow">
+      <div class="top">
+        <span class="no">第 ${i+1} 件</span>
+        <button class="pickbtn ${s.to?'':'ph'}" onclick="openWho(${i})" title="点击选择成员（与 @ 选人同一张表）">${s.to ? nm2(memberOf(s.to)) : '给谁…'}</button>
+        ${subs.length>1?`<span class="del" onclick="delSub(${i})" title="删除这件">✕</span>`:''}
+      </div>
+      <div class="opts">
+        <span class="k">限时</span>
+        <input class="ipt num" type="number" min="1" value="${s.timeout}" title="限时（分钟）" onchange="subs[${i}].timeout=Math.max(1,parseInt(this.value||'30',10)||30);renderSubs()">
+        <span class="k">分钟</span>
+        <label class="ck" title="重任务标记（只是标注，不给特权）"><input type="checkbox" ${s.heavy?'checked':''} onchange="subs[${i}].heavy=this.checked">重任务</label>
+      </div>
+      <input class="ipt" placeholder="这件任务要做什么（必填）" value="${escAttr(s.note)}" oninput="subs[${i}].note=this.value">
+    </div>`).join('');
+}
+function addSub(){
+  if(subs.length >= 12){ tips('一次最多 12 件'); return; }
+  const last = subs[subs.length-1] || {};
+  subs.push({ to:'', note:'', timeout: last.timeout || 30, heavy:false });
+  renderSubs();
+}
+function delSub(i){ subs.splice(i,1); renderSubs(); }
+function paintTaskHint(){
+  const h = $('#tfHint'); if(!h) return;
+  if(MAIN_RUNNING){
+    h.innerHTML = `当前已有任务在跑（${esc(MAIN_RUNNING)}），此时派发会被<b>拒绝</b>`;
+    return;
+  }
+  const okN = subs.filter(s => s.to && (s.note || '').trim()).length;
+  h.textContent = okN ? ('已填 ' + okN + ' 件，可以派发') : '填写完成后点击「派发」';
+}
+async function sendTask(){
+  const title = ($('#tfTitle') && $('#tfTitle').value.trim()) || '';
+  const note  = ($('#tfNote') && $('#tfNote').value.trim()) || '';
+  if(!title){ tips('请填写「这是什么任务」'); return; }
+  const list = subs.filter(s => s.to && (s.note || '').trim());
+  if(!list.length){ tips('每件任务都需选择「给谁」并填写内容'); return; }
+  if(new Set(list.map(s=>s.to)).size !== list.length){ tips('同一成员不能同时接两件事'); return; }
+  try{
+    const got = await callTool('next_task_id', {});       /* ① 要号：主任务 id 由系统发（老大的带 boss- 前缀） */
+    const taskId = got && got.taskId;
+    if(!taskId) throw new Error('没要到任务号');
+    const envelope = {
+      id: 'ui-task-' + stampNow() + '-' + Math.random().toString(36).slice(2,6),
+      source: 'boss', specversion: '1.0', type: 'task.assign',
+      to: list.map(s => s.to),                            /* ② 收件人＝全部执行者（同时也决定唤醒谁） */
+      data: {
+        task: taskId, title, note,
+        subtasks: list.map((s,i)=>({ to:s.to, id: taskId + '-' + (i+1), timeout: s.timeout, heavy: !!s.heavy, note: s.note })),
+      },
+      time: isoNow(),
+    };
+    await callTool('send_message', { memberId:'boss', envelope });    /* ③ 系统当场合格式，错了当场拒 */
+    tips('已派发：' + taskId);
+    subs = [{ to:'', note:'', timeout:30, heavy:false }];
+    const t1 = $('#tfTitle'), n1 = $('#tfNote');
+    if(t1) t1.value = ''; if(n1) n1.value = '';
+    renderSubs(); loadAll();
+  }catch(e){
+    tips('派发失败：' + e.message);
+    paintTaskHint();
+  }
+}
+
+/* 设置面板里主题的选中态跟着上次的选择（颜色本身在 <head> 里就穿好了） */
+paintThemeSeg();
+setMode('msg');       /* 开局是消息态（规范 04 §7.6 默认）*/
+renderSubs();
+paintMsgHint();
+
+/* 2026-10-06：开屏把"记住的状态"应用上 —— 任务板的收起/展开（applyBoardState）、
+   左栏宽度（applyLeftWidth）。这两句原先挂在画布专用脚本的 load 里，
+   搬进真界面后没有那段脚本了，改在初始化处直接调。 */
+if (typeof applyBoardState === 'function') applyBoardState();
+if (typeof applyLeftWidth  === 'function') applyLeftWidth();
+
+loadAll();
+setInterval(loadAll, 5000);
+/* ⭐ 2026-10-06：模式滑块两处**补算** —— ① 开屏那句 `setMode('msg')` 跑得比字体早，
+   字体一落定按钮宽度会变（等 `load` 再算一次）② 窗口缩放后宽度也变。都重算，滑块就不会跟按钮错位。 */
+window.addEventListener('load', moveModeSlider);
+window.addEventListener('resize', moveModeSlider);
+/* ⭐ 调试模式也定时核一眼（2026-10-04 加）：它**可能被 AI 那边开**，
+   而「开着忘了关」正是这条规矩要防的事 —— 每 5 秒读一次后端状态，开着就把顶上那条红字挂上。 */
+refreshDebugBadge();
+/* ⭐ 2026-10-05 改：**15 秒一次**（原来 5 秒）—— 它读 `GET /api/state`，而后端每次都会把
+   **当天的日志整份读一遍**去数"今天几次接入没走插件"。这两个数（调试开关／接入次数）都不秒变；
+   老大自己在设置面板里开关时 `setDebug()` 里会**立刻再刷一次**，不会延迟。 */
+setInterval(refreshDebugBadge, 15000);
+</script>
+</body>
+</html>

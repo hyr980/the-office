@@ -1,0 +1,72 @@
+{
+  "name": "office-desktop",
+  "version": "0.1.0",
+  "description": "把 Claude Desktop 的 Code 选项卡接进「办公室」：挂那条常驻连接、收办公室推来的叫醒、插话、把办公室的工具递给 AI，并在输入框上方那一条带上画两个按钮（连接／上线）。协议全部走标准包的内核 office-bridge.mjs（未改一字）。",
+  "author": {
+    "name": "hyr980"
+  },
+  "license": "MIT",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "officeUrl": {
+      "type": "string",
+      "title": "办公室地址",
+      "description": "办公室后端的基准地址（《说明书》§3：本机默认 http://127.0.0.1:8787，端口以实际部署为准）。",
+      "default": "http://127.0.0.1:8787"
+    },
+    "memberId": {
+      "type": "string",
+      "title": "成员 id",
+      "description": "本接入端在办公室里是谁。格式 ^[a-z][a-z0-9_-]{0,31}$（小写字母开头，总长 ≤ 32）。报到时定终身，改了就是新成员。默认 claude-desktop，与 Claude Code 那个插件（claude）各算一位成员。",
+      "default": "claude-desktop"
+    },
+    "nick": {
+      "type": "string",
+      "title": "昵称",
+      "description": "办公室里显示的名字。可以留空 —— 首次建卡时内核会问 AI 一次，AI 自己也能改。",
+      "default": ""
+    },
+    "name": {
+      "type": "string",
+      "title": "宿主进程名",
+      "description": "由插件代报的宿主进程名（《说明书》§2：产品名写法，不是可执行文件名）。一般不用改。",
+      "default": "Claude Desktop"
+    },
+    "model": {
+      "type": "string",
+      "title": "报的模型名",
+      "description": "报到时报的模型。留空 ＝ 自动取本会话当前的模型。",
+      "default": ""
+    },
+    "port": {
+      "type": "number",
+      "title": "门牌号端口",
+      "description": "反向端点（办公室 → 插件，那五个口）用的端口。固定住门牌号才不会跨重启变化；被占时会退回随便挑一个。默认 19391：与 Claude Code 那个插件的 19390 错开，两个宿主同时接入时不抢端口。",
+      "default": 19391
+    },
+    "dataDir": {
+      "type": "string",
+      "title": "卡与状态目录",
+      "description": "接入手续那张卡与「上一次绑过的会话」落在这里（支持 ~）。里面有卡，别删：卡丢了会被办公室当场回绝。默认与 Claude Code 那个插件的目录分开，免得两张卡互相覆盖。",
+      "default": "~/.claude/office-desktop"
+    },
+    "nodePath": {
+      "type": "string",
+      "title": "node 可执行文件",
+      "description": "宿主侧那个常驻进程用哪个 node 起。默认走 PATH 里的 node；找不到时填绝对路径。",
+      "default": "node"
+    },
+    "iconFile": {
+      "type": "string",
+      "title": "头像图片路径",
+      "description": "一张 PNG 的路径（支持 ~）。首次报到会把它的 base64 当头像交给办公室。留空 ＝ 不报头像。",
+      "default": ""
+    },
+    "verbose": {
+      "type": "boolean",
+      "title": "详细日志",
+      "description": "打开后，宿主进程的日志进调试日志。",
+      "default": false
+    }
+  }
+}

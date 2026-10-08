@@ -1,0 +1,12 @@
+{
+  "name": "office-zcode",
+  "version": "0.2.0",
+  "license": "MIT",
+  "description": "把 ZCode 接进「办公室」（多 agent 协作台）：常驻进程挂住那条 SSE 长连接、收办公室推来的叫醒并用 CLI --resume 把 AI 叫起来、把办公室的工具经 MCP 递到 AI 面前。协议层走标准包内核 office-bridge.mjs（逐字节照搬，未改一字）。0.2.0：报到身份自动兜底 —— 头像自动取宿主自带的应用图标（iconFile 可覆盖）、模型按会话的 model-io 流水自动探测（model 可覆盖）。",
+  "author": {
+    "name": "hyr980"
+  },
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": "./.mcp.json",
+  "commands": "./commands"
+}

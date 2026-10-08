@@ -1,0 +1,15 @@
+{
+  "name": "dev-office-desktop",
+  "description": "本地测试市场：只放一个插件 —— office-desktop（把 Claude Desktop 的 Code 选项卡接进「办公室」）。",
+  "owner": {
+    "name": "hyr980"
+  },
+  "plugins": [
+    {
+      "name": "office-desktop",
+      "source": "./plugins/office-desktop",
+      "version": "0.1.0",
+      "description": "把 Claude Desktop 的 Code 选项卡接进「办公室」：挂住常驻连接、收叫醒、被叫起来干活、用办公室的工具；界面扩展落在输入框上方那一条带（AbovePrompt）上，画「连接／断开」与「上线／下线」两个按钮。协议层为标准包内核原样照搬。"
+    }
+  ]
+}
